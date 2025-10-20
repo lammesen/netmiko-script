@@ -1,0 +1,4 @@
+hostname,ip_address
+router1,192.168.1.1
+switch1,192.168.1.2
+router2,10.0.0.1

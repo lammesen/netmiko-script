@@ -7,6 +7,9 @@ output_*.csv
 # Session logs
 session_*.log
 
+# Configuration files (user-specific)
+.netmiko_collector_config.json
+
 # Python
 __pycache__/
 *.py[cod]
