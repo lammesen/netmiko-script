@@ -15,25 +15,30 @@ import argparse
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict
 from getpass import getpass
 
 try:
     from netmiko import ConnectHandler
-    from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
+    from netmiko.exceptions import (
+        NetmikoTimeoutException,
+        NetmikoAuthenticationException,
+    )
 except ImportError:
-    print("Error: Netmiko is not installed. Please run: pip install -r requirements.txt")
+    print(
+        "Error: Netmiko is not installed. Please run: pip install -r requirements.txt"
+    )
     sys.exit(1)
 
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler('netmiko_collector.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
+        logging.FileHandler("netmiko_collector.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -63,9 +68,9 @@ def load_devices(devices_file: str) -> List[Dict[str, str]]:
         raise FileNotFoundError(f"Devices file not found: {devices_file}")
 
     try:
-        with open(devices_file, 'r', encoding='utf-8') as f:
+        with open(devices_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            required_fields = {'hostname', 'ip_address', 'device_type'}
+            required_fields = {"hostname", "ip_address", "device_type"}
 
             for row_num, row in enumerate(reader, start=2):
                 # Validate required fields
@@ -74,11 +79,34 @@ def load_devices(devices_file: str) -> List[Dict[str, str]]:
                         f"CSV must contain columns: {', '.join(required_fields)}"
                     )
 
-                devices.append({
-                    'hostname': row['hostname'].strip(),
-                    'ip_address': row['ip_address'].strip(),
-                    'device_type': row['device_type'].strip()
-                })
+                normalized_row = {}
+                missing_values = []
+
+                for field in required_fields:
+                    value = row.get(field)
+                    if value is None:
+                        missing_values.append(field)
+                        continue
+
+                    trimmed = value.strip()
+                    if not trimmed:
+                        missing_values.append(field)
+                        continue
+
+                    normalized_row[field] = trimmed
+
+                if missing_values:
+                    raise ValueError(
+                        f"Row {row_num} has missing values for: {', '.join(sorted(missing_values))}"
+                    )
+
+                devices.append(
+                    {
+                        "hostname": normalized_row["hostname"],
+                        "ip_address": normalized_row["ip_address"],
+                        "device_type": normalized_row["device_type"],
+                    }
+                )
 
         if not devices:
             raise ValueError("No devices found in the file")
@@ -106,8 +134,13 @@ def load_commands(commands_file: str) -> List[str]:
     if not Path(commands_file).exists():
         raise FileNotFoundError(f"Commands file not found: {commands_file}")
 
-    with open(commands_file, 'r', encoding='utf-8') as f:
-        commands = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+    with open(commands_file, "r", encoding="utf-8") as f:
+        commands = []
+        for line in f:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            commands.append(stripped)
 
     if not commands:
         raise ValueError("No commands found in the file")
@@ -116,8 +149,9 @@ def load_commands(commands_file: str) -> List[str]:
     return commands
 
 
-def connect_and_execute(device: Dict[str, str], commands: List[str],
-                       username: str, password: str) -> List[Dict[str, str]]:
+def connect_and_execute(
+    device: Dict[str, str], commands: List[str], username: str, password: str
+) -> List[Dict[str, str]]:
     """
     Connect to a device and execute commands.
 
@@ -131,15 +165,15 @@ def connect_and_execute(device: Dict[str, str], commands: List[str],
         List of result dictionaries containing command outputs
     """
     results = []
-    hostname = device['hostname']
+    hostname = device["hostname"]
 
     device_params = {
-        'device_type': device['device_type'],
-        'host': device['ip_address'],
-        'username': username,
-        'password': password,
-        'timeout': 30,
-        'session_log': f'session_{hostname}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+        "device_type": device["device_type"],
+        "host": device["ip_address"],
+        "username": username,
+        "password": password,
+        "timeout": 30,
+        "session_log": f"session_{hostname}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
     }
 
     try:
@@ -153,26 +187,30 @@ def connect_and_execute(device: Dict[str, str], commands: List[str],
             logger.info(f"Executing '{command}' on {hostname}")
             try:
                 output = connection.send_command(command, read_timeout=60)
-                results.append({
-                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'hostname': hostname,
-                    'ip_address': device['ip_address'],
-                    'command': command,
-                    'output': output,
-                    'status': 'success'
-                })
+                results.append(
+                    {
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "hostname": hostname,
+                        "ip_address": device["ip_address"],
+                        "command": command,
+                        "output": output,
+                        "status": "success",
+                    }
+                )
                 logger.info(f"Command '{command}' executed successfully on {hostname}")
             except Exception as e:
                 error_msg = f"Error executing command: {str(e)}"
                 logger.error(f"{error_msg} on {hostname}")
-                results.append({
-                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'hostname': hostname,
-                    'ip_address': device['ip_address'],
-                    'command': command,
-                    'output': error_msg,
-                    'status': 'failed'
-                })
+                results.append(
+                    {
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "hostname": hostname,
+                        "ip_address": device["ip_address"],
+                        "command": command,
+                        "output": error_msg,
+                        "status": "failed",
+                    }
+                )
 
         connection.disconnect()
         logger.info(f"Disconnected from {hostname}")
@@ -181,40 +219,46 @@ def connect_and_execute(device: Dict[str, str], commands: List[str],
         error_msg = "Connection timeout - device unreachable"
         logger.error(f"{hostname}: {error_msg}")
         for command in commands:
-            results.append({
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'hostname': hostname,
-                'ip_address': device['ip_address'],
-                'command': command,
-                'output': error_msg,
-                'status': 'failed'
-            })
+            results.append(
+                {
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "hostname": hostname,
+                    "ip_address": device["ip_address"],
+                    "command": command,
+                    "output": error_msg,
+                    "status": "failed",
+                }
+            )
 
     except NetmikoAuthenticationException:
         error_msg = "Authentication failed - check credentials"
         logger.error(f"{hostname}: {error_msg}")
         for command in commands:
-            results.append({
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'hostname': hostname,
-                'ip_address': device['ip_address'],
-                'command': command,
-                'output': error_msg,
-                'status': 'failed'
-            })
+            results.append(
+                {
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "hostname": hostname,
+                    "ip_address": device["ip_address"],
+                    "command": command,
+                    "output": error_msg,
+                    "status": "failed",
+                }
+            )
 
     except Exception as e:
         error_msg = f"Unexpected error: {str(e)}"
         logger.error(f"{hostname}: {error_msg}")
         for command in commands:
-            results.append({
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'hostname': hostname,
-                'ip_address': device['ip_address'],
-                'command': command,
-                'output': error_msg,
-                'status': 'failed'
-            })
+            results.append(
+                {
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "hostname": hostname,
+                    "ip_address": device["ip_address"],
+                    "command": command,
+                    "output": error_msg,
+                    "status": "failed",
+                }
+            )
 
     return results
 
@@ -231,9 +275,9 @@ def save_to_csv(results: List[Dict[str, str]], output_file: str) -> None:
         logger.warning("No results to save")
         return
 
-    fieldnames = ['timestamp', 'hostname', 'ip_address', 'command', 'output', 'status']
+    fieldnames = ["timestamp", "hostname", "ip_address", "command", "output", "status"]
 
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results)
@@ -244,42 +288,45 @@ def save_to_csv(results: List[Dict[str, str]], output_file: str) -> None:
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(
-        description='Collect command outputs from Cisco devices using Netmiko',
+        description="Collect command outputs from Cisco devices using Netmiko",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s -d devices.csv -c commands.txt
   %(prog)s -d devices.csv -c commands.txt -o custom_output.csv
   %(prog)s -d devices.csv -c commands.txt -u admin
-        """
+        """,
     )
 
     parser.add_argument(
-        '-d', '--devices',
+        "-d",
+        "--devices",
         required=True,
-        help='Path to devices CSV file (format: hostname,ip_address,device_type)'
+        help="Path to devices CSV file (format: hostname,ip_address,device_type)",
     )
 
     parser.add_argument(
-        '-c', '--commands',
+        "-c",
+        "--commands",
         required=True,
-        help='Path to commands text file (one command per line)'
+        help="Path to commands text file (one command per line)",
     )
 
     parser.add_argument(
-        '-o', '--output',
-        default=f'output_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv',
-        help='Output CSV file name (default: output_YYYYMMDD_HHMMSS.csv)'
+        "-o",
+        "--output",
+        default=f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+        help="Output CSV file name (default: output_YYYYMMDD_HHMMSS.csv)",
     )
 
     parser.add_argument(
-        '-u', '--username',
-        help='SSH username (will prompt if not provided)'
+        "-u", "--username", help="SSH username (will prompt if not provided)"
     )
 
     parser.add_argument(
-        '-p', '--password',
-        help='SSH password (NOT RECOMMENDED - use interactive prompt instead)'
+        "-p",
+        "--password",
+        help="SSH password (NOT RECOMMENDED - use interactive prompt instead)",
     )
 
     args = parser.parse_args()
@@ -313,7 +360,7 @@ Examples:
 
     # Summary
     total_commands = len(all_results)
-    successful = sum(1 for r in all_results if r['status'] == 'success')
+    successful = sum(1 for r in all_results if r["status"] == "success")
     failed = total_commands - successful
 
     logger.info("=" * 60)
@@ -326,5 +373,5 @@ Examples:
     logger.info("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
