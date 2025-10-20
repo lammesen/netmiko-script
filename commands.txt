@@ -1,0 +1,7 @@
+# Cisco IOS Commands to Execute
+# Lines starting with # are ignored
+
+show version
+show ip interface brief
+show running-config | include hostname
+show inventory

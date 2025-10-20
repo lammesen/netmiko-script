@@ -1,0 +1,18 @@
+2025-10-20 15:50:24,157 - INFO - Loaded 3 device(s) from devices.csv
+2025-10-20 15:50:24,160 - INFO - Loaded 4 command(s) from commands.txt
+2025-10-20 15:50:39,896 - INFO - Starting command collection from 3 device(s)
+2025-10-20 15:50:39,896 - INFO - Connecting to router1 (192.168.1.1)...
+2025-10-20 15:50:49,922 - ERROR - router1: Connection timeout - device unreachable
+2025-10-20 15:50:49,923 - INFO - Connecting to switch1 (192.168.1.2)...
+2025-10-20 15:50:59,933 - ERROR - switch1: Connection timeout - device unreachable
+2025-10-20 15:50:59,933 - INFO - Connecting to router2 (10.0.0.1)...
+2025-10-20 15:51:01,979 - ERROR - router2: Connection timeout - device unreachable
+2025-10-20 15:51:01,982 - INFO - Results saved to output_20251020_155024.csv
+2025-10-20 15:51:01,982 - INFO - ============================================================
+2025-10-20 15:51:01,982 - INFO - SUMMARY:
+2025-10-20 15:51:01,983 - INFO - Total devices: 3
+2025-10-20 15:51:01,983 - INFO - Total commands executed: 12
+2025-10-20 15:51:01,983 - INFO - Successful: 0
+2025-10-20 15:51:01,983 - INFO - Failed: 12
+2025-10-20 15:51:01,983 - INFO - Output file: output_20251020_155024.csv
+2025-10-20 15:51:01,984 - INFO - ============================================================

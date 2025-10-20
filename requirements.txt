@@ -1,0 +1,5 @@
+# Netmiko Device Command Collector Dependencies
+# Install with: pip install -r requirements.txt
+
+netmiko>=4.3.0
+paramiko>=3.4.0
