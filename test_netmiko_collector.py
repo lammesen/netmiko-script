@@ -57,13 +57,40 @@ class TestLoadDevices:
     def test_load_devices_missing_required_field(self):
         """Test error when required field is missing."""
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
-            f.write("hostname,ip_address\n")
-            f.write("router1,192.168.1.1\n")
+            f.write("hostname\n")
+            f.write("router1\n")
             temp_file = f.name
 
         try:
             with pytest.raises(ValueError, match="CSV must contain columns"):
                 load_devices(temp_file)
+        finally:
+            os.unlink(temp_file)
+    
+    def test_load_devices_missing_device_type_no_default(self):
+        """Test error when device_type is not provided and no default is set."""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
+            f.write("hostname,ip_address\n")
+            f.write("router1,192.168.1.1\n")
+            temp_file = f.name
+
+        try:
+            with pytest.raises(ValueError, match="device_type not specified"):
+                load_devices(temp_file)
+        finally:
+            os.unlink(temp_file)
+    
+    def test_load_devices_with_default_device_type(self):
+        """Test loading devices with default device_type."""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
+            f.write("hostname,ip_address\n")
+            f.write("router1,192.168.1.1\n")
+            temp_file = f.name
+
+        try:
+            devices = load_devices(temp_file, default_device_type="cisco_ios")
+            assert len(devices) == 1
+            assert devices[0]["device_type"] == "cisco_ios"
         finally:
             os.unlink(temp_file)
 
