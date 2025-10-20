@@ -26,7 +26,7 @@ jobs:
       run: |
         bandit -r . -c pyproject.toml -f json -o bandit-report.json
     - name: Upload Bandit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bandit-security-report
@@ -48,7 +48,7 @@ jobs:
       run: |
         safety check --file=requirements.txt --output=json > safety-report.json || true
     - name: Upload Safety report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: safety-security-report
