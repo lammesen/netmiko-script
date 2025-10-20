@@ -48,3 +48,10 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
+.tox/
+
+# Build artifacts
+*.spec
+bandit-report.json
+safety-report.json

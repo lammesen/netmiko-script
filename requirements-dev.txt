@@ -1,0 +1,28 @@
+# Development dependencies for netmiko-collector
+# Install with: pip install -r requirements-dev.txt
+
+# Base dependencies
+-r requirements.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# Code quality
+pylint>=2.15.0
+flake8>=5.0.0
+black>=22.0.0
+isort>=5.10.0
+mypy>=0.990
+
+# Security
+bandit>=1.7.0
+safety>=2.3.0
+
+# Pre-commit hooks
+pre-commit>=2.20.0
+
+# Documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
