@@ -18,6 +18,9 @@ from datetime import datetime
 from typing import List, Dict
 from getpass import getpass
 
+# Constants for boolean value parsing
+TRUTHY_VALUES = ("true", "yes", "1")
+
 try:
     from netmiko import ConnectHandler
     from netmiko.exceptions import (
@@ -183,14 +186,16 @@ def connect_and_execute(
     }
 
     # Add SSH config file support (device-specific or global)
-    ssh_config_file = device.get("ssh_config_file") or global_ssh_config
+    ssh_config_file = device.get("ssh_config_file")
+    if not ssh_config_file:
+        ssh_config_file = global_ssh_config
     if ssh_config_file:
         device_params["ssh_config_file"] = ssh_config_file
 
     # Add SSH key authentication support
     if device.get("use_keys"):
         use_keys_value = device["use_keys"].lower()
-        if use_keys_value in ("true", "yes", "1"):
+        if use_keys_value in TRUTHY_VALUES:
             device_params["use_keys"] = True
             if device.get("key_file"):
                 device_params["key_file"] = device["key_file"]
