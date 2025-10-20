@@ -1,0 +1,36 @@
+# Example SSH Configuration for Proxy/Jump Server
+# Save this file as ~/.ssh/config or use a custom path
+
+# Jump Server / Proxy Configuration
+Host jumpserver
+    HostName 10.0.0.1
+    User jumpuser
+    Port 22
+    IdentityFile ~/.ssh/jump_key
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Network Device 1 - Access through jump server
+Host router1-proxy
+    HostName 192.168.1.1
+    User netadmin
+    ProxyCommand ssh -W %h:%p jumpserver
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Network Device 2 - Access through jump server
+Host switch1-proxy
+    HostName 192.168.1.2
+    User netadmin
+    ProxyCommand ssh -W %h:%p jumpserver
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Network Device 3 - Access through jump server with different key
+Host router2-proxy
+    HostName 10.0.0.2
+    User admin
+    ProxyCommand ssh -W %h:%p jumpserver
+    IdentityFile ~/.ssh/device_key
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
