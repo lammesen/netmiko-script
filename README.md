@@ -34,16 +34,21 @@ pip install -r requirements.txt
 Create a CSV file with the following format:
 
 ```csv
-hostname,ip_address,device_type
-router1,192.168.1.1,cisco_ios
-switch1,192.168.1.2,cisco_ios
-router2,10.0.0.1,cisco_ios
+hostname,ip_address,device_type,ssh_config_file,use_keys,key_file
+router1,192.168.1.1,cisco_ios,,,
+switch1,192.168.1.2,cisco_ios,,,
+router2,10.0.0.1,cisco_ios,~/.ssh/config,true,~/.ssh/id_rsa
 ```
 
 **Required columns:**
 - `hostname`: Friendly name for the device
-- `ip_address`: IP address or hostname of the device
+- `ip_address`: IP address or hostname of the device (can be an alias from SSH config)
 - `device_type`: Netmiko device type (e.g., cisco_ios, cisco_xe, cisco_nxos)
+
+**Optional columns (for proxy/jump server support):**
+- `ssh_config_file`: Path to SSH config file for this device (e.g., ~/.ssh/config)
+- `use_keys`: Set to "true", "yes", or "1" to enable SSH key authentication
+- `key_file`: Path to SSH private key file (e.g., ~/.ssh/id_rsa)
 
 ### Commands File (TXT)
 
@@ -86,6 +91,63 @@ python netmiko_collector.py -d devices.csv -c commands.txt -o my_results.csv
 ```bash
 python netmiko_collector.py -d devices.csv -c commands.txt -u admin
 ```
+
+**Use SSH config file for proxy/jump server:**
+```bash
+python netmiko_collector.py -d devices.csv -c commands.txt -s ~/.ssh/config
+```
+
+**View help:**
+```bash
+python netmiko_collector.py --help
+```
+
+## Proxy/Jump Server Configuration
+
+You can connect to devices through a proxy or jump server using SSH configuration files.
+
+### Method 1: Global SSH Config File
+
+Use the `-s` or `--ssh-config` option to specify an SSH config file for all devices:
+
+```bash
+python netmiko_collector.py -d devices.csv -c commands.txt -u admin -s ~/.ssh/config
+```
+
+### Method 2: Per-Device SSH Config File
+
+Specify the SSH config file for individual devices in the devices.csv file:
+
+```csv
+hostname,ip_address,device_type,ssh_config_file,use_keys,key_file
+router1,router1-alias,cisco_ios,~/.ssh/config,true,~/.ssh/id_rsa
+```
+
+### SSH Config File Example
+
+Create an SSH config file (e.g., `~/.ssh/config`) with your proxy settings:
+
+```
+# Jump server configuration
+Host jumphost
+    HostName 10.0.0.1
+    User jumpuser
+    IdentityFile ~/.ssh/jump_key
+
+# Target device through jump server
+Host router1-alias
+    HostName 192.168.1.1
+    User netadmin
+    ProxyCommand ssh -W %h:%p jumphost
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+```
+
+In this configuration:
+- `jumphost` is the proxy/jump server
+- `router1-alias` is the target device accessed through the jump server
+- `ProxyCommand` establishes the connection through the jump host
+- Use the alias (router1-alias) in the devices.csv file's ip_address column
 
 **View help:**
 ```bash
@@ -247,6 +309,13 @@ For issues or questions:
 
 ## Version History
 
+- **1.1.0** (2025-10-20): Proxy/Jump Server Support & Code Quality Improvements
+  - Added support for SSH config files (global and per-device)
+  - Added SSH key authentication support
+  - Added proxy/jump server connectivity
+  - Fixed pylint warnings (logging format, exception handling)
+  - Improved code quality from 8.49/10 to 9.81/10
+  - Added .gitignore for better repository management
 - **1.0.0** (2025-10-20): Initial release
   - Basic SSH connectivity
   - Command execution

@@ -1,0 +1,5 @@
+hostname,ip_address,device_type,ssh_config_file,use_keys,key_file
+router1-direct,192.168.1.1,cisco_ios,,,
+router1-via-proxy,router1-proxy,cisco_ios,ssh_config_example.txt,true,~/.ssh/id_rsa
+switch1-via-proxy,switch1-proxy,cisco_ios,ssh_config_example.txt,true,~/.ssh/id_rsa
+router2-via-proxy,router2-proxy,cisco_ios,ssh_config_example.txt,true,~/.ssh/device_key

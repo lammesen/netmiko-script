@@ -48,9 +48,12 @@ def load_devices(devices_file: str) -> List[Dict[str, str]]:
     Load device information from a CSV file.
 
     Expected CSV format:
-    hostname,ip_address,device_type
-    router1,192.168.1.1,cisco_ios
-    switch1,192.168.1.2,cisco_ios
+    hostname,ip_address,device_type,ssh_config_file,use_keys,key_file
+    router1,192.168.1.1,cisco_ios,,,
+    switch1,192.168.1.2,cisco_ios,~/.ssh/config,true,~/.ssh/id_rsa
+
+    Required fields: hostname, ip_address, device_type
+    Optional fields: ssh_config_file, use_keys, key_file
 
     Args:
         devices_file: Path to the devices CSV file
@@ -71,6 +74,7 @@ def load_devices(devices_file: str) -> List[Dict[str, str]]:
         with open(devices_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             required_fields = {"hostname", "ip_address", "device_type"}
+            optional_fields = {"ssh_config_file", "use_keys", "key_file"}
 
             for row_num, row in enumerate(reader, start=2):
                 # Validate required fields
@@ -100,22 +104,22 @@ def load_devices(devices_file: str) -> List[Dict[str, str]]:
                         f"Row {row_num} has missing values for: {', '.join(sorted(missing_values))}"
                     )
 
-                devices.append(
-                    {
-                        "hostname": normalized_row["hostname"],
-                        "ip_address": normalized_row["ip_address"],
-                        "device_type": normalized_row["device_type"],
-                    }
-                )
+                # Process optional fields
+                for field in optional_fields:
+                    value = row.get(field, "").strip()
+                    if value:
+                        normalized_row[field] = value
+
+                devices.append(normalized_row)
 
         if not devices:
             raise ValueError("No devices found in the file")
 
-        logger.info(f"Loaded {len(devices)} device(s) from {devices_file}")
+        logger.info("Loaded %d device(s) from %s", len(devices), devices_file)
         return devices
 
     except csv.Error as e:
-        raise ValueError(f"Error parsing CSV file: {e}")
+        raise ValueError(f"Error parsing CSV file: {e}") from e
 
 
 def load_commands(commands_file: str) -> List[str]:
@@ -145,12 +149,13 @@ def load_commands(commands_file: str) -> List[str]:
     if not commands:
         raise ValueError("No commands found in the file")
 
-    logger.info(f"Loaded {len(commands)} command(s) from {commands_file}")
+    logger.info("Loaded %d command(s) from %s", len(commands), commands_file)
     return commands
 
 
 def connect_and_execute(
-    device: Dict[str, str], commands: List[str], username: str, password: str
+    device: Dict[str, str], commands: List[str], username: str, password: str,
+    global_ssh_config: str = None
 ) -> List[Dict[str, str]]:
     """
     Connect to a device and execute commands.
@@ -160,6 +165,7 @@ def connect_and_execute(
         commands: List of commands to execute
         username: SSH username
         password: SSH password
+        global_ssh_config: Global SSH config file path (optional)
 
     Returns:
         List of result dictionaries containing command outputs
@@ -176,15 +182,28 @@ def connect_and_execute(
         "session_log": f"session_{hostname}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
     }
 
+    # Add SSH config file support (device-specific or global)
+    ssh_config_file = device.get("ssh_config_file") or global_ssh_config
+    if ssh_config_file:
+        device_params["ssh_config_file"] = ssh_config_file
+
+    # Add SSH key authentication support
+    if device.get("use_keys"):
+        use_keys_value = device["use_keys"].lower()
+        if use_keys_value in ("true", "yes", "1"):
+            device_params["use_keys"] = True
+            if device.get("key_file"):
+                device_params["key_file"] = device["key_file"]
+
     try:
-        logger.info(f"Connecting to {hostname} ({device['ip_address']})...")
+        logger.info("Connecting to %s (%s)...", hostname, device['ip_address'])
         connection = ConnectHandler(**device_params)
 
-        logger.info(f"Successfully connected to {hostname}")
+        logger.info("Successfully connected to %s", hostname)
 
         # Execute each command
         for command in commands:
-            logger.info(f"Executing '{command}' on {hostname}")
+            logger.info("Executing '%s' on %s", command, hostname)
             try:
                 output = connection.send_command(command, read_timeout=60)
                 results.append(
@@ -197,10 +216,10 @@ def connect_and_execute(
                         "status": "success",
                     }
                 )
-                logger.info(f"Command '{command}' executed successfully on {hostname}")
-            except Exception as e:
-                error_msg = f"Error executing command: {str(e)}"
-                logger.error(f"{error_msg} on {hostname}")
+                logger.info("Command '%s' executed successfully on %s", command, hostname)
+            except Exception as cmd_error:
+                error_msg = f"Error executing command: {str(cmd_error)}"
+                logger.error("%s on %s", error_msg, hostname)
                 results.append(
                     {
                         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -213,11 +232,11 @@ def connect_and_execute(
                 )
 
         connection.disconnect()
-        logger.info(f"Disconnected from {hostname}")
+        logger.info("Disconnected from %s", hostname)
 
     except NetmikoTimeoutException:
         error_msg = "Connection timeout - device unreachable"
-        logger.error(f"{hostname}: {error_msg}")
+        logger.error("%s: %s", hostname, error_msg)
         for command in commands:
             results.append(
                 {
@@ -232,7 +251,7 @@ def connect_and_execute(
 
     except NetmikoAuthenticationException:
         error_msg = "Authentication failed - check credentials"
-        logger.error(f"{hostname}: {error_msg}")
+        logger.error("%s: %s", hostname, error_msg)
         for command in commands:
             results.append(
                 {
@@ -245,9 +264,9 @@ def connect_and_execute(
                 }
             )
 
-    except Exception as e:
-        error_msg = f"Unexpected error: {str(e)}"
-        logger.error(f"{hostname}: {error_msg}")
+    except Exception as conn_error:
+        error_msg = f"Unexpected error: {str(conn_error)}"
+        logger.error("%s: %s", hostname, error_msg)
         for command in commands:
             results.append(
                 {
@@ -282,7 +301,7 @@ def save_to_csv(results: List[Dict[str, str]], output_file: str) -> None:
         writer.writeheader()
         writer.writerows(results)
 
-    logger.info(f"Results saved to {output_file}")
+    logger.info("Results saved to %s", output_file)
 
 
 def main():
@@ -329,14 +348,20 @@ Examples:
         help="SSH password (NOT RECOMMENDED - use interactive prompt instead)",
     )
 
+    parser.add_argument(
+        "-s",
+        "--ssh-config",
+        help="Path to SSH config file for proxy/jump server configuration",
+    )
+
     args = parser.parse_args()
 
     # Load devices and commands
     try:
         devices = load_devices(args.devices)
         commands = load_commands(args.commands)
-    except (FileNotFoundError, ValueError) as e:
-        logger.error(f"Error loading input files: {e}")
+    except (FileNotFoundError, ValueError) as load_error:
+        logger.error("Error loading input files: %s", load_error)
         sys.exit(1)
 
     # Get credentials
@@ -348,11 +373,12 @@ Examples:
         sys.exit(1)
 
     # Process all devices
-    logger.info(f"Starting command collection from {len(devices)} device(s)")
+    logger.info("Starting command collection from %d device(s)", len(devices))
     all_results = []
 
     for device in devices:
-        results = connect_and_execute(device, commands, username, password)
+        results = connect_and_execute(device, commands, username, password,
+                                       args.ssh_config)
         all_results.extend(results)
 
     # Save results
@@ -365,11 +391,11 @@ Examples:
 
     logger.info("=" * 60)
     logger.info("SUMMARY:")
-    logger.info(f"Total devices: {len(devices)}")
-    logger.info(f"Total commands executed: {total_commands}")
-    logger.info(f"Successful: {successful}")
-    logger.info(f"Failed: {failed}")
-    logger.info(f"Output file: {args.output}")
+    logger.info("Total devices: %d", len(devices))
+    logger.info("Total commands executed: %d", total_commands)
+    logger.info("Successful: %d", successful)
+    logger.info("Failed: %d", failed)
+    logger.info("Output file: %s", args.output)
     logger.info("=" * 60)
 
 
