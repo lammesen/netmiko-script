@@ -6,8 +6,18 @@ Unit tests for netmiko_collector.py
 import csv
 import os
 import tempfile
+import importlib
+from unittest.mock import patch, MagicMock
 import pytest
-from netmiko_collector import load_devices, load_commands, save_to_csv
+from netmiko_collector import (
+    load_devices,
+    load_commands,
+    save_to_csv,
+    load_config,
+    save_config,
+    process_devices_parallel,
+    connect_and_execute
+)
 
 
 class TestLoadDevices:
@@ -66,7 +76,7 @@ class TestLoadDevices:
                 load_devices(temp_file)
         finally:
             os.unlink(temp_file)
-    
+
     def test_load_devices_missing_device_type_no_default(self):
         """Test error when device_type is not provided and no default is set."""
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
@@ -79,7 +89,7 @@ class TestLoadDevices:
                 load_devices(temp_file)
         finally:
             os.unlink(temp_file)
-    
+
     def test_load_devices_with_default_device_type(self):
         """Test loading devices with default device_type."""
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as f:
@@ -210,46 +220,41 @@ class TestSaveToCSV:
 
 class TestConfigManagement:
     """Test configuration management functions."""
-    
+
     def test_load_config_defaults(self):
         """Test loading default configuration when file doesn't exist."""
-        from netmiko_collector import load_config
-        import tempfile
-        
         # Use a non-existent config file by temporarily changing HOME
         original_home = os.environ.get('HOME')
         with tempfile.TemporaryDirectory() as tmpdir:
             os.environ['HOME'] = tmpdir
-            
+
             # Force reload of CONFIG_FILE with new HOME
-            import importlib
+            # pylint: disable=import-outside-toplevel
             import netmiko_collector
             importlib.reload(netmiko_collector)
-            
-            config = netmiko_collector.load_config()
+
+            config = load_config()
             assert config['default_device_type'] == 'cisco_ios'
             assert config['strip_whitespace'] is True
             assert config['max_workers'] == 5
             assert config['connection_timeout'] == 30
             assert config['command_timeout'] == 60
-            
+
             # Restore original HOME
             if original_home:
                 os.environ['HOME'] = original_home
-    
+
     def test_save_and_load_config(self):
         """Test saving and loading configuration."""
-        import tempfile
-        
         with tempfile.TemporaryDirectory() as tmpdir:
             original_home = os.environ.get('HOME')
             os.environ['HOME'] = tmpdir
-            
+
             # Force reload
-            import importlib
+            # pylint: disable=import-outside-toplevel
             import netmiko_collector
             importlib.reload(netmiko_collector)
-            
+
             # Save custom config
             custom_config = {
                 'default_device_type': 'cisco_xe',
@@ -258,16 +263,16 @@ class TestConfigManagement:
                 'connection_timeout': 45,
                 'command_timeout': 90,
             }
-            netmiko_collector.save_config(custom_config)
-            
+            save_config(custom_config)
+
             # Load and verify
-            loaded_config = netmiko_collector.load_config()
+            loaded_config = load_config()
             assert loaded_config['default_device_type'] == 'cisco_xe'
             assert loaded_config['strip_whitespace'] is False
             assert loaded_config['max_workers'] == 10
             assert loaded_config['connection_timeout'] == 45
             assert loaded_config['command_timeout'] == 90
-            
+
             # Restore original HOME
             if original_home:
                 os.environ['HOME'] = original_home
@@ -275,18 +280,23 @@ class TestConfigManagement:
 
 class TestParallelProcessing:
     """Test parallel/concurrent processing functions."""
-    
+
     def test_process_devices_parallel_structure(self):
         """Test that parallel processing returns correct structure."""
-        from netmiko_collector import process_devices_parallel
-        from unittest.mock import patch, MagicMock
-        
         devices = [
-            {"hostname": "router1", "ip_address": "192.168.1.1", "device_type": "cisco_ios"},
-            {"hostname": "router2", "ip_address": "192.168.1.2", "device_type": "cisco_ios"},
+            {
+                "hostname": "router1",
+                "ip_address": "192.168.1.1",
+                "device_type": "cisco_ios"
+            },
+            {
+                "hostname": "router2",
+                "ip_address": "192.168.1.2",
+                "device_type": "cisco_ios"
+            },
         ]
         commands = ["show version"]
-        
+
         # Mock the actual connection
         mock_results = [
             {
@@ -298,13 +308,14 @@ class TestParallelProcessing:
                 "status": "success",
             }
         ]
-        
-        with patch('netmiko_collector.process_device_concurrent', return_value=mock_results):
+
+        with patch('netmiko_collector.process_device_concurrent',
+                   return_value=mock_results):
             results = process_devices_parallel(
                 devices, commands, "admin", "password",
                 None, True, 30, 60, 2
             )
-            
+
             # Should get results from both devices
             assert len(results) >= 1
             assert all(isinstance(r, dict) for r in results)
@@ -312,40 +323,40 @@ class TestParallelProcessing:
 
 class TestWhitespaceStripping:
     """Test whitespace stripping functionality."""
-    
+
     def test_whitespace_stripping_in_connect_execute(self):
         """Test that whitespace stripping works correctly."""
-        from netmiko_collector import connect_and_execute
-        from unittest.mock import patch, MagicMock
-        
         device = {
             "hostname": "test_router",
             "ip_address": "192.168.1.1",
             "device_type": "cisco_ios"
         }
         commands = ["show version"]
-        
+
         # Mock the ConnectHandler
         mock_connection = MagicMock()
-        mock_connection.send_command.return_value = "  Line with spaces  \n  Another line  \n  "
-        
-        with patch('netmiko_collector.ConnectHandler', return_value=mock_connection):
+        output = "  Line with spaces  \n  Another line  \n  "
+        mock_connection.send_command.return_value = output
+
+        with patch('netmiko_collector.ConnectHandler',
+                   return_value=mock_connection):
             # Test with whitespace stripping enabled
             results = connect_and_execute(
                 device, commands, "admin", "password",
                 None, True, 30, 60
             )
-            
+
             assert len(results) == 1
             # Output should be stripped
             assert results[0]['output'] == "Line with spaces\n  Another line"
-            
+
             # Test with whitespace stripping disabled
             results = connect_and_execute(
                 device, commands, "admin", "password",
                 None, False, 30, 60
             )
-            
+
             assert len(results) == 1
             # Output should NOT be stripped (original)
-            assert results[0]['output'] == "  Line with spaces  \n  Another line  \n  "
+            expected = "  Line with spaces  \n  Another line  \n  "
+            assert results[0]['output'] == expected
