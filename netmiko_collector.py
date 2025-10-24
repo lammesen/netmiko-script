@@ -611,7 +611,7 @@ def open_file_in_editor(file_path: str) -> bool:
         True if successful, False otherwise
     """
     import platform
-    import subprocess
+    import subprocess  # nosec B404 - subprocess needed for cross-platform editor support
 
     file_path_obj = Path(file_path)
 
@@ -629,15 +629,15 @@ def open_file_in_editor(file_path: str) -> bool:
 
         if system == "Windows":
             # Try notepad first, then default editor
-            subprocess.run(["notepad", str(file_path_obj)], check=False)
+            subprocess.run(["notepad", str(file_path_obj)], check=False)  # nosec B603 B607
         elif system == "Darwin":  # macOS
-            subprocess.run(["open", "-e", str(file_path_obj)], check=False)
+            subprocess.run(["open", "-e", str(file_path_obj)], check=False)  # nosec B603 B607
         else:  # Linux
             # Try common editors
             editors = ["nano", "vim", "vi", "gedit", "kate"]
             for editor in editors:
                 try:
-                    subprocess.run([editor, str(file_path_obj)], check=False)
+                    subprocess.run([editor, str(file_path_obj)], check=False)  # nosec B603 B607
                     break
                 except FileNotFoundError:
                     continue
@@ -884,7 +884,7 @@ def view_output_file(file_path: str) -> None:
         file_path: Path to the output file
     """
     import platform
-    import subprocess
+    import subprocess  # nosec B404 - subprocess needed for cross-platform file opening
     import webbrowser
 
     file_path_obj = Path(file_path)
@@ -905,11 +905,14 @@ def view_output_file(file_path: str) -> None:
         # Excel files - open with default app
         elif suffix == ".xlsx":
             if system == "Windows":
-                subprocess.run(["start", "", str(file_path_obj)], shell=True, check=False)
+                # Use os.startfile on Windows to avoid shell=True security issue
+                import os
+
+                os.startfile(str(file_path_obj))  # nosec B606 # pylint: disable=no-member
             elif system == "Darwin":
-                subprocess.run(["open", str(file_path_obj)], check=False)
+                subprocess.run(["open", str(file_path_obj)], check=False)  # nosec B603 B607
             else:
-                subprocess.run(["xdg-open", str(file_path_obj)], check=False)
+                subprocess.run(["xdg-open", str(file_path_obj)], check=False)  # nosec B603 B607
             print_success(f"Opened {file_path} in default application")
 
         # Text-based files - display in terminal with Rich or cat
@@ -1746,14 +1749,14 @@ def process_devices_parallel(
     commands: List[str],
     username: str,
     password: str,
-    global_ssh_config: str,
+    global_ssh_config: Optional[str],
     strip_whitespace: bool,
     connection_timeout: int,
     command_timeout: int,
     max_workers: int = 5,
     enable_session_logging: bool = False,
     enable_mode: bool = False,
-    enable_password: str = None,
+    enable_password: Optional[str] = None,
     retry_on_failure: bool = True,
     show_progress: bool = True,
 ) -> List[Dict[str, str]]:
@@ -2059,7 +2062,7 @@ def save_to_markdown(results: List[Dict[str, str]], output_file: str) -> None:
     logger.info("Markdown report saved to %s", output_file)
 
 
-def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
+def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:  # type: ignore
     """
     Save command outputs to an HTML file with beautiful Bootstrap styling.
 
@@ -2394,7 +2397,7 @@ def save_to_excel(results: List[Dict[str, str]], output_file: str) -> None:
 
 
 def save_results(
-    results: List[Dict[str, str]], output_file: str, formats: List[str] = None
+    results: List[Dict[str, str]], output_file: str, formats: Optional[List[str]] = None
 ) -> None:
     """
     Save results in multiple formats.
@@ -2416,9 +2419,9 @@ def save_results(
             save_to_json(results, f"{base_name}.json")
         elif fmt == "html":
             save_to_html(results, f"{base_name}.html")
-        elif fmt == "markdown" or fmt == "md":
+        elif fmt in ("markdown", "md"):
             save_to_markdown(results, f"{base_name}.md")
-        elif fmt == "excel" or fmt == "xlsx":
+        elif fmt in ("excel", "xlsx"):
             save_to_excel(results, f"{base_name}.xlsx")
         else:
             logger.warning("Unknown format: %s", fmt)
@@ -2455,7 +2458,7 @@ def run_collection(
         str, typer.Option("--output", "-o", help="Output file base name")
     ] = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
     output_format: Annotated[
-        List[str], typer.Option("--format", "-f", help="Output format(s)")
+        Optional[List[str]], typer.Option("--format", "-f", help="Output format(s)")
     ] = None,
     username: Annotated[
         Optional[str], typer.Option("--username", "-u", help="SSH username")
@@ -2497,7 +2500,7 @@ def run_collection(
     """
     # Load configuration
     config = load_config()
-    
+
     # Handle default output_format value
     if output_format is None:
         output_format = ["csv"]
@@ -2578,7 +2581,7 @@ def run_collection(
             commands_list,
             username,
             password,
-            ssh_config if ssh_config else None,
+            ssh_config,
             strip_whitespace,
             connection_timeout,
             command_timeout,

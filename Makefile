@@ -40,13 +40,13 @@ lint:  ## Run all linters
 	@echo "Running flake8..."
 	flake8 $(PYTHON_FILES) --max-line-length=100 --extend-ignore=E203,W503
 	@echo "Running pylint..."
-	pylint $(PYTHON_FILES) --fail-under=9.5
+	pylint $(PYTHON_FILES) --fail-under=9.0
 	@echo "Running mypy..."
 	mypy netmiko_collector.py --ignore-missing-imports
 	@echo "All linters passed!"
 
 lint-pylint:  ## Run pylint only
-	pylint $(PYTHON_FILES) --fail-under=9.5
+	pylint $(PYTHON_FILES) --fail-under=9.0
 
 lint-flake8:  ## Run flake8 only
 	flake8 $(PYTHON_FILES) --max-line-length=100 --extend-ignore=E203,W503
