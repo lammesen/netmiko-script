@@ -6,7 +6,6 @@ Unit tests for netmiko_collector.py
 import csv
 import os
 import tempfile
-import importlib
 from unittest.mock import patch, MagicMock
 import pytest
 from netmiko_collector import (
@@ -221,61 +220,54 @@ class TestSaveToCSV:
 class TestConfigManagement:
     """Test configuration management functions."""
 
-    def test_load_config_defaults(self):
+    @pytest.fixture
+    def temp_config_dir(self, tmp_path, monkeypatch):
+        """Create a temporary config directory."""
+        monkeypatch.setenv('HOME', str(tmp_path))
+        monkeypatch.setenv('USERPROFILE', str(tmp_path))  # Windows support
+        # Update the CONFIG_FILE path dynamically
+        from netmiko_collector import DEFAULT_CONFIG
+        new_config_file = tmp_path / ".netmiko_collector_config.json"
+        monkeypatch.setattr('netmiko_collector.CONFIG_FILE', new_config_file)
+        return tmp_path
+
+    def test_load_config_defaults(self, temp_config_dir):
         """Test loading default configuration when file doesn't exist."""
-        # Use a non-existent config file by temporarily changing HOME
-        original_home = os.environ.get('HOME')
-        with tempfile.TemporaryDirectory() as tmpdir:
-            os.environ['HOME'] = tmpdir
+        config = load_config()
+        assert config['default_device_type'] == 'cisco_ios'
+        assert config['strip_whitespace'] is True
+        assert config['max_workers'] == 5
+        assert config['connection_timeout'] == 30
+        assert config['command_timeout'] == 60
+        assert config['enable_session_logging'] is False
+        assert config['enable_mode'] is False
+        assert config['retry_on_failure'] is True
 
-            # Force reload of CONFIG_FILE with new HOME
-            # pylint: disable=import-outside-toplevel
-            import netmiko_collector
-            importlib.reload(netmiko_collector)
-
-            config = load_config()
-            assert config['default_device_type'] == 'cisco_ios'
-            assert config['strip_whitespace'] is True
-            assert config['max_workers'] == 5
-            assert config['connection_timeout'] == 30
-            assert config['command_timeout'] == 60
-
-            # Restore original HOME
-            if original_home:
-                os.environ['HOME'] = original_home
-
-    def test_save_and_load_config(self):
+    def test_save_and_load_config(self, temp_config_dir):
         """Test saving and loading configuration."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            original_home = os.environ.get('HOME')
-            os.environ['HOME'] = tmpdir
+        # Save custom config
+        custom_config = {
+            'default_device_type': 'cisco_xe',
+            'strip_whitespace': False,
+            'max_workers': 10,
+            'connection_timeout': 45,
+            'command_timeout': 90,
+            'enable_session_logging': True,
+            'enable_mode': True,
+            'retry_on_failure': False,
+        }
+        save_config(custom_config)
 
-            # Force reload
-            # pylint: disable=import-outside-toplevel
-            import netmiko_collector
-            importlib.reload(netmiko_collector)
-
-            # Save custom config
-            custom_config = {
-                'default_device_type': 'cisco_xe',
-                'strip_whitespace': False,
-                'max_workers': 10,
-                'connection_timeout': 45,
-                'command_timeout': 90,
-            }
-            save_config(custom_config)
-
-            # Load and verify
-            loaded_config = load_config()
-            assert loaded_config['default_device_type'] == 'cisco_xe'
-            assert loaded_config['strip_whitespace'] is False
-            assert loaded_config['max_workers'] == 10
-            assert loaded_config['connection_timeout'] == 45
-            assert loaded_config['command_timeout'] == 90
-
-            # Restore original HOME
-            if original_home:
-                os.environ['HOME'] = original_home
+        # Load and verify
+        loaded_config = load_config()
+        assert loaded_config['default_device_type'] == 'cisco_xe'
+        assert loaded_config['strip_whitespace'] is False
+        assert loaded_config['max_workers'] == 10
+        assert loaded_config['connection_timeout'] == 45
+        assert loaded_config['command_timeout'] == 90
+        assert loaded_config['enable_session_logging'] is True
+        assert loaded_config['enable_mode'] is True
+        assert loaded_config['retry_on_failure'] is False
 
 
 class TestParallelProcessing:
@@ -309,11 +301,11 @@ class TestParallelProcessing:
             }
         ]
 
-        with patch('netmiko_collector.process_device_concurrent',
+        with patch('netmiko_collector.connect_with_retry',
                    return_value=mock_results):
             results = process_devices_parallel(
                 devices, commands, "admin", "password",
-                None, True, 30, 60, 2
+                None, True, 30, 60, 2, False, False, None, False, False
             )
 
             # Should get results from both devices
@@ -343,17 +335,19 @@ class TestWhitespaceStripping:
             # Test with whitespace stripping enabled
             results = connect_and_execute(
                 device, commands, "admin", "password",
-                None, True, 30, 60
+                None, True, 30, 60, False, False, None
             )
 
             assert len(results) == 1
-            # Output should be stripped
-            assert results[0]['output'] == "Line with spaces\n  Another line"
+            # Output should have trailing whitespace stripped from each line
+            # and leading/trailing empty lines removed
+            expected = "Line with spaces\n  Another line"
+            assert results[0]['output'] == expected
 
             # Test with whitespace stripping disabled
             results = connect_and_execute(
                 device, commands, "admin", "password",
-                None, False, 30, 60
+                None, False, 30, 60, False, False, None
             )
 
             assert len(results) == 1
