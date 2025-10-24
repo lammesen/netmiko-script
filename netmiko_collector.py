@@ -12,23 +12,24 @@ Version: 3.0.0
 """
 
 import csv
-import sys
-import logging
-import json
 import io
-from pathlib import Path
-from datetime import datetime
-from typing import List, Dict, Optional
-from getpass import getpass
+import json
+import logging
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+from getpass import getpass
+from pathlib import Path
+from typing import Dict, List, Optional
+
 import typer
 from typing_extensions import Annotated
 
 # Set UTF-8 encoding for Windows console to support emojis
-if sys.platform == 'win32':
+if sys.platform == "win32":
     try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
     except (AttributeError, io.UnsupportedOperation):
         # If already wrapped or not supported, continue
         pass
@@ -104,7 +105,7 @@ DEVICE_COMMANDS = {
             " | exclude ",
             " | begin ",
             " | section ",
-        ]
+        ],
     },
     "cisco_xe": {
         "show": [
@@ -150,7 +151,7 @@ DEVICE_COMMANDS = {
             " | exclude ",
             " | begin ",
             " | section ",
-        ]
+        ],
     },
     "cisco_nxos": {
         "show": [
@@ -194,7 +195,7 @@ DEVICE_COMMANDS = {
             " | exclude ",
             " | begin ",
             " | grep ",
-        ]
+        ],
     },
     "cisco_asa": {
         "show": [
@@ -227,7 +228,7 @@ DEVICE_COMMANDS = {
             " | exclude ",
             " | begin ",
             " | grep ",
-        ]
+        ],
     },
     "arista_eos": {
         "show": [
@@ -261,7 +262,7 @@ DEVICE_COMMANDS = {
             " | exclude ",
             " | begin ",
             " | grep ",
-        ]
+        ],
     },
     "juniper_junos": {
         "show": [
@@ -290,66 +291,66 @@ DEVICE_COMMANDS = {
             " | find ",
             " | display set",
             " | display xml",
-        ]
+        ],
     },
 }
 
 try:
     from netmiko import ConnectHandler
     from netmiko.exceptions import (
-        NetmikoTimeoutException,
         NetmikoAuthenticationException,
+        NetmikoTimeoutException,
     )
 except ImportError:
-    print(
-        "Error: Netmiko is not installed. Please run: pip install -r requirements.txt"
-    )
+    print("Error: Netmiko is not installed. Please run: pip install -r requirements.txt")
     sys.exit(1)
 
 try:
     from rich.console import Console
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
     from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
     from rich.table import Table
-    from rich.prompt import Prompt, Confirm
-    from rich import print as rprint
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
     Console = None
-    rprint = print
 
 try:
     from tqdm import tqdm
+
     TQDM_AVAILABLE = True
 except ImportError:
     TQDM_AVAILABLE = False
 
 try:
-    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+    from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
     TENACITY_AVAILABLE = True
 except ImportError:
     TENACITY_AVAILABLE = False
 
 try:
     import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles import Alignment, Font, PatternFill
+
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
 
 try:
-    from prompt_toolkit import prompt, PromptSession
-    from prompt_toolkit.completion import WordCompleter, FuzzyCompleter
-    from prompt_toolkit.history import InMemoryHistory
-    from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-    from prompt_toolkit.styles import Style
-    from prompt_toolkit.formatted_text import HTML
-    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit import prompt
     from prompt_toolkit.application import Application
+    from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+    from prompt_toolkit.completion import FuzzyCompleter, WordCompleter
+    from prompt_toolkit.formatted_text import HTML
+    from prompt_toolkit.history import InMemoryHistory
+    from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.layout.containers import HSplit, Window
     from prompt_toolkit.layout.controls import FormattedTextControl
     from prompt_toolkit.layout.layout import Layout
+    from prompt_toolkit.styles import Style
+
     PROMPT_TOOLKIT_AVAILABLE = True
 except ImportError:
     PROMPT_TOOLKIT_AVAILABLE = False
@@ -413,10 +414,7 @@ def print_info(text: str) -> None:
 
 
 def get_positive_int_input(
-    prompt: str,
-    current_value: int,
-    min_val: int = 1,
-    max_val: Optional[int] = None
+    prompt: str, current_value: int, min_val: int = 1, max_val: Optional[int] = None
 ) -> Optional[int]:
     """
     Get and validate positive integer input from user.
@@ -459,19 +457,24 @@ def expand_path(path_str: str) -> Path:
 
 
 # Custom styling for prompt_toolkit - clean and simple
-CUSTOM_STYLE = Style.from_dict({
-    # Autocomplete dropdown - minimal and clean
-    'completion-menu.completion': '#888888',  # Gray text for unselected items
-    'completion-menu.completion.current': '#00aaff bold',  # Bright cyan for selected (no background)
-
-    # Scrollbar - subtle appearance
-    'scrollbar.background': 'bg:#2a2a2a',
-    'scrollbar.button': 'bg:#00aaff',
-
-    # Prompt styling
-    'prompt': 'cyan bold',
-    'input': '#ffffff',  # White input text
-}) if PROMPT_TOOLKIT_AVAILABLE else None
+CUSTOM_STYLE = (
+    Style.from_dict(
+        {
+            # Autocomplete dropdown - minimal and clean
+            "completion-menu.completion": "#888888",  # Gray text for unselected
+            # Bright cyan for selected (no background)
+            "completion-menu.completion.current": "#00aaff bold",
+            # Scrollbar - subtle appearance
+            "scrollbar.background": "bg:#2a2a2a",
+            "scrollbar.button": "bg:#00aaff",
+            # Prompt styling
+            "prompt": "cyan bold",
+            "input": "#ffffff",  # White input text
+        }
+    )
+    if PROMPT_TOOLKIT_AVAILABLE
+    else None
+)
 
 
 def select_from_menu(title: str, options: List[tuple], style: str = "bold cyan") -> Optional[str]:
@@ -515,58 +518,57 @@ def select_from_menu(title: str, options: List[tuple], style: str = "bold cyan")
         for idx, (value, desc) in enumerate(options):
             if idx == current_index[0]:
                 # Highlighted item with arrow emoji
-                result.append(('class:selected', f'  ▶ {desc}\n'))
+                result.append(("class:selected", f"  ▶ {desc}\n"))
             else:
                 # Normal item with circle
-                result.append(('', f'  ○ {desc}\n'))
-        result.append(('class:help', '\n↑/↓ Navigate • Enter Select • Esc Cancel'))
+                result.append(("", f"  ○ {desc}\n"))
+        result.append(("class:help", "\n↑/↓ Navigate • Enter Select • Esc Cancel"))
         return result
 
     # Create key bindings
     kb = KeyBindings()
-    exit_value = {'value': None}
+    exit_value = {"value": None}
 
-    @kb.add('up')
+    @kb.add("up")
     def _(event):
         current_index[0] = (current_index[0] - 1) % len(options)
         event.app.invalidate()
 
-    @kb.add('down')
+    @kb.add("down")
     def _(event):
         current_index[0] = (current_index[0] + 1) % len(options)
         event.app.invalidate()
 
-    @kb.add('enter')
+    @kb.add("enter")
     def _(event):
-        exit_value['value'] = options[current_index[0]][0]
-        exit_value['description'] = options[current_index[0]][1]
+        exit_value["value"] = options[current_index[0]][0]
+        exit_value["description"] = options[current_index[0]][1]
         event.app.exit()
 
-    @kb.add('escape')
+    @kb.add("escape")
     def _(event):
-        exit_value['value'] = None
+        exit_value["value"] = None
         event.app.exit()
 
-    @kb.add('q')
+    @kb.add("q")
     def _(event):
-        exit_value['value'] = None
+        exit_value["value"] = None
         event.app.exit()
 
-    @kb.add('c-c')
+    @kb.add("c-c")
     def _(event):
-        exit_value['value'] = None
+        exit_value["value"] = None
         event.app.exit()
 
     # Create layout with dynamic content
-    menu_control = FormattedTextControl(
-        text=get_formatted_text,
-        focusable=True
-    )
+    menu_control = FormattedTextControl(text=get_formatted_text, focusable=True)
 
-    container = HSplit([
-        Window(height=1),
-        Window(content=menu_control, height=len(options) + 2),
-    ])
+    container = HSplit(
+        [
+            Window(height=1),
+            Window(content=menu_control, height=len(options) + 2),
+        ]
+    )
 
     # Create application
     app = Application(
@@ -574,10 +576,12 @@ def select_from_menu(title: str, options: List[tuple], style: str = "bold cyan")
         key_bindings=kb,
         mouse_support=True,
         full_screen=False,
-        style=Style.from_dict({
-            'selected': 'bg:#00aaff #000000 bold',
-            'help': 'cyan',
-        })
+        style=Style.from_dict(
+            {
+                "selected": "bg:#00aaff #000000 bold",
+                "help": "cyan",
+            }
+        ),
     )
 
     # Run application
@@ -585,13 +589,13 @@ def select_from_menu(title: str, options: List[tuple], style: str = "bold cyan")
         app.run()
 
         # Show selection confirmation if something was selected
-        if exit_value['value'] is not None and 'description' in exit_value:
+        if exit_value["value"] is not None and "description" in exit_value:
             if RICH_AVAILABLE and console:
                 console.print(f"✅ Selected: [cyan]{exit_value['description']}[/cyan]\n")
             else:
                 print(f"✅ Selected: {exit_value['description']}\n")
 
-        return exit_value['value']
+        return exit_value["value"]
     except KeyboardInterrupt:
         return None
 
@@ -606,8 +610,8 @@ def open_file_in_editor(file_path: str) -> bool:
     Returns:
         True if successful, False otherwise
     """
-    import subprocess
     import platform
+    import subprocess  # nosec B404 - subprocess needed for cross-platform editor support
 
     file_path_obj = Path(file_path)
 
@@ -625,15 +629,15 @@ def open_file_in_editor(file_path: str) -> bool:
 
         if system == "Windows":
             # Try notepad first, then default editor
-            subprocess.run(["notepad", str(file_path_obj)], check=False)
+            subprocess.run(["notepad", str(file_path_obj)], check=False)  # nosec B603 B607
         elif system == "Darwin":  # macOS
-            subprocess.run(["open", "-e", str(file_path_obj)], check=False)
+            subprocess.run(["open", "-e", str(file_path_obj)], check=False)  # nosec B603 B607
         else:  # Linux
             # Try common editors
             editors = ["nano", "vim", "vi", "gedit", "kate"]
             for editor in editors:
                 try:
-                    subprocess.run([editor, str(file_path_obj)], check=False)
+                    subprocess.run([editor, str(file_path_obj)], check=False)  # nosec B603 B607
                     break
                 except FileNotFoundError:
                     continue
@@ -663,17 +667,19 @@ def get_commands_for_device_type(device_type: str) -> List[str]:
         commands.extend(device_cmds.get("show", []))
 
         # Add common administrative commands
-        commands.extend([
-            "# === Configuration Commands ===",
-            "write memory",
-            "copy running-config startup-config",
-            "# === Troubleshooting Commands ===",
-            "ping",
-            "traceroute",
-            "# === Clear Commands ===",
-            "clear counters",
-            "clear logging",
-        ])
+        commands.extend(
+            [
+                "# === Configuration Commands ===",
+                "write memory",
+                "copy running-config startup-config",
+                "# === Troubleshooting Commands ===",
+                "ping",
+                "traceroute",
+                "# === Clear Commands ===",
+                "clear counters",
+                "clear logging",
+            ]
+        )
 
     else:
         # Fallback to generic commands
@@ -709,7 +715,7 @@ def edit_commands_with_autocomplete(file_path: str, device_type: str) -> bool:
     existing_commands = []
     if file_path_obj.exists():
         try:
-            with open(file_path_obj, 'r', encoding='utf-8') as f:
+            with open(file_path_obj, "r", encoding="utf-8") as f:
                 existing_commands = [line.rstrip() for line in f.readlines()]
         except Exception as e:
             print_error(f"Failed to read file: {e}")
@@ -753,13 +759,7 @@ def edit_commands_with_autocomplete(file_path: str, device_type: str) -> bool:
         print()
 
     # Create completer with fuzzy matching - clean and simple
-    completer = FuzzyCompleter(
-        WordCompleter(
-            command_suggestions,
-            ignore_case=True,
-            sentence=True
-        )
-    )
+    completer = FuzzyCompleter(WordCompleter(command_suggestions, ignore_case=True, sentence=True))
 
     # Create history
     history = InMemoryHistory()
@@ -776,7 +776,7 @@ def edit_commands_with_autocomplete(file_path: str, device_type: str) -> bool:
             try:
                 # Prompt for command with custom styling and enhanced completion menu
                 user_input = prompt(
-                    HTML(f'<cyan><b>[{command_number}]</b></cyan> <b>&gt;</b> '),
+                    HTML(f"<cyan><b>[{command_number}]</b></cyan> <b>&gt;</b> "),
                     completer=completer,
                     history=history,
                     auto_suggest=AutoSuggestFromHistory(),
@@ -784,7 +784,7 @@ def edit_commands_with_autocomplete(file_path: str, device_type: str) -> bool:
                     style=CUSTOM_STYLE,
                     complete_in_thread=True,  # Smooth async completion
                     mouse_support=True,  # Enable mouse in dropdown
-                    refresh_interval=0.5  # Smooth refresh
+                    refresh_interval=0.5,  # Smooth refresh
                 ).strip()
 
                 if not user_input:
@@ -820,18 +820,21 @@ def edit_commands_with_autocomplete(file_path: str, device_type: str) -> bool:
 
     # Save to file
     try:
-        with open(file_path_obj, 'w', encoding='utf-8') as f:
+        with open(file_path_obj, "w", encoding="utf-8") as f:
             for cmd in all_commands:
-                f.write(cmd + '\n')
+                f.write(cmd + "\n")
 
         print_success(f"Saved {len(all_commands)} commands to {file_path}")
 
         # Show summary
-        non_comment_commands = [c for c in all_commands if c.strip() and not c.strip().startswith("#")]
+        non_comment_commands = [
+            c for c in all_commands if c.strip() and not c.strip().startswith("#")
+        ]
         comment_lines = [c for c in all_commands if c.strip().startswith("#")]
 
         if RICH_AVAILABLE and console:
             from rich.table import Table
+
             table = Table(title="📊 Summary", show_header=False, border_style="cyan")
             table.add_column("Type", style="cyan")
             table.add_column("Count", style="green")
@@ -840,7 +843,7 @@ def edit_commands_with_autocomplete(file_path: str, device_type: str) -> bool:
             table.add_row("📄 Total Lines", str(len(all_commands)))
             console.print(table)
         else:
-            print(f"\n📊 Summary:")
+            print("\n📊 Summary:")
             print(f"  ⚡ Commands: {len(non_comment_commands)}")
             print(f"  💬 Comments: {len(comment_lines)}")
             print(f"  📄 Total Lines: {len(all_commands)}")
@@ -880,8 +883,8 @@ def view_output_file(file_path: str) -> None:
     Args:
         file_path: Path to the output file
     """
-    import subprocess
     import platform
+    import subprocess  # nosec B404 - subprocess needed for cross-platform file opening
     import webbrowser
 
     file_path_obj = Path(file_path)
@@ -902,11 +905,14 @@ def view_output_file(file_path: str) -> None:
         # Excel files - open with default app
         elif suffix == ".xlsx":
             if system == "Windows":
-                subprocess.run(["start", "", str(file_path_obj)], shell=True, check=False)
+                # Use os.startfile on Windows to avoid shell=True security issue
+                import os
+
+                os.startfile(str(file_path_obj))  # nosec B606 # pylint: disable=no-member
             elif system == "Darwin":
-                subprocess.run(["open", str(file_path_obj)], check=False)
+                subprocess.run(["open", str(file_path_obj)], check=False)  # nosec B603 B607
             else:
-                subprocess.run(["xdg-open", str(file_path_obj)], check=False)
+                subprocess.run(["xdg-open", str(file_path_obj)], check=False)  # nosec B603 B607
             print_success(f"Opened {file_path} in default application")
 
         # Text-based files - display in terminal with Rich or cat
@@ -915,7 +921,7 @@ def view_output_file(file_path: str) -> None:
                 # Use Rich syntax highlighting for JSON and Markdown
                 from rich.syntax import Syntax
 
-                with open(file_path_obj, 'r', encoding='utf-8') as f:
+                with open(file_path_obj, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 if suffix == ".json":
@@ -929,13 +935,13 @@ def view_output_file(file_path: str) -> None:
             else:
                 # Fallback to simple display
                 print_banner(f"Contents of {file_path}")
-                with open(file_path_obj, 'r', encoding='utf-8') as f:
+                with open(file_path_obj, "r", encoding="utf-8") as f:
                     content = f.read()
                     # Limit output to first 100 lines for CSV
                     if suffix == ".csv":
-                        lines = content.split('\n')
+                        lines = content.split("\n")
                         if len(lines) > 100:
-                            print('\n'.join(lines[:100]))
+                            print("\n".join(lines[:100]))
                             print(f"\n... ({len(lines) - 100} more lines)")
                         else:
                             print(content)
@@ -969,7 +975,7 @@ def get_or_create_file(default_filename: str, file_description: str) -> Optional
         print_info(f"📁 Location: {default_path}")
 
         # Ask for confirmation
-        confirm = input(f"\nUse this file? (yes/no) [yes]: ").strip().lower()
+        confirm = input("\nUse this file? (yes/no) [yes]: ").strip().lower()
         if confirm in ["", "yes", "y"]:
             return str(default_path)
 
@@ -982,10 +988,10 @@ def get_or_create_file(default_filename: str, file_description: str) -> Optional
     options = [
         ("create", f"Create new {default_filename} in current directory"),
         ("browse", "Enter path to existing file"),
-        ("cancel", "Cancel and go back")
+        ("cancel", "Cancel and go back"),
     ]
 
-    choice = select_from_menu(f"What would you like to do?", options, "bold yellow")
+    choice = select_from_menu("What would you like to do?", options, "bold yellow")
 
     if choice == "create":
         print_success(f"Creating new {default_filename} in {current_dir}")
@@ -1027,7 +1033,7 @@ def show_file_manager_menu() -> None:
             ("3", "View output files"),
             ("4", "Create sample devices.csv"),
             ("5", "Create sample commands.txt"),
-            ("6", "Back to Main Menu")
+            ("6", "Back to Main Menu"),
         ]
 
         choice = select_from_menu("FILE MANAGER", menu_options, "bold yellow")
@@ -1056,11 +1062,14 @@ def show_file_manager_menu() -> None:
                 if PROMPT_TOOLKIT_AVAILABLE:
                     # Get device type from config for autocomplete suggestions
                     config = load_config()
-                    device_type = config.get('default_device_type', 'cisco_ios')
+                    device_type = config.get("default_device_type", "cisco_ios")
 
                     print_info(f"Opening {commands_file} in smart editor with autocomplete...")
                     print_info(f"Device type: {device_type}")
-                    print_info("Tip: Press Tab for suggestions, type 'done' when finished, 'cancel' to discard changes")
+                    print_info(
+                        "Tip: Press Tab for suggestions, type 'done' when finished, "
+                        "'cancel' to discard changes"
+                    )
 
                     if edit_commands_with_autocomplete(commands_file, device_type):
                         print_success("Commands file updated successfully")
@@ -1069,7 +1078,9 @@ def show_file_manager_menu() -> None:
                 else:
                     # Fallback to basic editor
                     print_warning("prompt_toolkit not available - using basic editor")
-                    print_info("Install prompt_toolkit for autocomplete: pip install prompt_toolkit")
+                    print_info(
+                        "Install prompt_toolkit for autocomplete: pip install prompt_toolkit"
+                    )
                     print_info(f"Opening {commands_file} in editor...")
                     if open_file_in_editor(commands_file):
                         print_success("Editor closed")
@@ -1121,12 +1132,16 @@ router2,10.0.0.1,cisco_xe
 """
             devices_file = "devices.csv"
             if Path(devices_file).exists():
-                confirm = input(f"{devices_file} already exists. Overwrite? (yes/no) [no]: ").strip().lower()
+                confirm = (
+                    input(f"{devices_file} already exists. Overwrite? (yes/no) [no]: ")
+                    .strip()
+                    .lower()
+                )
                 if confirm not in ["yes", "y"]:
                     continue
 
             try:
-                with open(devices_file, 'w', encoding='utf-8') as f:
+                with open(devices_file, "w", encoding="utf-8") as f:
                     f.write(sample_devices)
                 print_success(f"Created sample {devices_file}")
             except Exception as e:
@@ -1142,12 +1157,16 @@ show inventory
 """
             commands_file = "commands.txt"
             if Path(commands_file).exists():
-                confirm = input(f"{commands_file} already exists. Overwrite? (yes/no) [no]: ").strip().lower()
+                confirm = (
+                    input(f"{commands_file} already exists. Overwrite? (yes/no) [no]: ")
+                    .strip()
+                    .lower()
+                )
                 if confirm not in ["yes", "y"]:
                     continue
 
             try:
-                with open(commands_file, 'w', encoding='utf-8') as f:
+                with open(commands_file, "w", encoding="utf-8") as f:
                     f.write(sample_commands)
                 print_success(f"Created sample {commands_file}")
             except Exception as e:
@@ -1163,7 +1182,7 @@ def load_config() -> Dict:
     """
     if CONFIG_FILE.exists():
         try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 # Merge with defaults to ensure all keys exist
                 return {**DEFAULT_CONFIG, **config}
@@ -1181,7 +1200,7 @@ def save_config(config: Dict) -> None:
         config: Configuration dictionary to save
     """
     try:
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
         logger.info("Configuration saved to %s", CONFIG_FILE)
     except IOError as e:
@@ -1211,7 +1230,7 @@ def show_settings_menu(config: Dict) -> Dict:
             ("8", f"Retry on Failure: {config.get('retry_on_failure', True)}"),
             ("9", "Save Settings"),
             ("10", "Reset to Defaults"),
-            ("11", "Back to Main Menu")
+            ("11", "Back to Main Menu"),
         ]
 
         choice = select_from_menu("SETTINGS MENU", menu_options)
@@ -1224,93 +1243,88 @@ def show_settings_menu(config: Dict) -> Dict:
             prompt = f"Enter default device type [{config['default_device_type']}]: "
             new_value = input(prompt).strip()
             if new_value:
-                config['default_device_type'] = new_value
+                config["default_device_type"] = new_value
                 print_success(f"Default device type set to: {new_value}")
 
         elif choice == "2":
-            current = "yes" if config['strip_whitespace'] else "no"
+            current = "yes" if config["strip_whitespace"] else "no"
             prompt = f"Strip whitespace? (yes/no) [{current}]: "
             new_value = input(prompt).strip().lower()
             if new_value == "":
                 # Keep current value on Enter
                 pass
             elif new_value in ["yes", "y", "true", "1"]:
-                config['strip_whitespace'] = True
+                config["strip_whitespace"] = True
                 print_success("Whitespace stripping enabled")
             elif new_value in ["no", "n", "false", "0"]:
-                config['strip_whitespace'] = False
+                config["strip_whitespace"] = False
                 print_success("Whitespace stripping disabled")
 
         elif choice == "3":
             new_value = get_positive_int_input(
-                "Enter max workers",
-                config['max_workers'],
-                MIN_WORKERS,
-                MAX_WORKERS
+                "Enter max workers", config["max_workers"], MIN_WORKERS, MAX_WORKERS
             )
             if new_value:
-                config['max_workers'] = new_value
+                config["max_workers"] = new_value
                 print_success(f"Max workers set to: {new_value}")
 
         elif choice == "4":
             new_value = get_positive_int_input(
-                "Enter connection timeout (seconds)",
-                config['connection_timeout']
+                "Enter connection timeout (seconds)", config["connection_timeout"]
             )
             if new_value:
-                config['connection_timeout'] = new_value
+                config["connection_timeout"] = new_value
                 print_success(f"Connection timeout set to: {new_value} seconds")
 
         elif choice == "5":
             new_value = get_positive_int_input(
-                "Enter command timeout (seconds)",
-                config['command_timeout']
+                "Enter command timeout (seconds)", config["command_timeout"]
             )
             if new_value:
-                config['command_timeout'] = new_value
+                config["command_timeout"] = new_value
                 print_success(f"Command timeout set to: {new_value} seconds")
 
         elif choice == "6":
-            current = "yes" if config.get('enable_session_logging', False) else "no"
+            current = "yes" if config.get("enable_session_logging", False) else "no"
             prompt = f"Enable session logging? (yes/no) [{current}]: "
             new_value = input(prompt).strip().lower()
             if new_value == "":
                 # Keep current value on Enter
                 pass
             elif new_value in ["yes", "y", "true", "1"]:
-                config['enable_session_logging'] = True
+                config["enable_session_logging"] = True
                 print_success("Session logging enabled")
                 print_warning("Session logs may contain sensitive information!")
             elif new_value in ["no", "n", "false", "0"]:
-                config['enable_session_logging'] = False
+                config["enable_session_logging"] = False
                 print_success("Session logging disabled")
 
         elif choice == "7":
-            current = "yes" if config.get('enable_mode', False) else "no"
+            current = "yes" if config.get("enable_mode", False) else "no"
             prompt = f"Enter enable mode on connect? (yes/no) [{current}]: "
             new_value = input(prompt).strip().lower()
             if new_value == "":
                 # Keep current value on Enter
                 pass
             elif new_value in ["yes", "y", "true", "1"]:
-                config['enable_mode'] = True
+                config["enable_mode"] = True
                 print_success("Enable mode enabled")
             elif new_value in ["no", "n", "false", "0"]:
-                config['enable_mode'] = False
+                config["enable_mode"] = False
                 print_success("Enable mode disabled")
 
         elif choice == "8":
-            current = "yes" if config.get('retry_on_failure', True) else "no"
+            current = "yes" if config.get("retry_on_failure", True) else "no"
             prompt = f"Retry on connection failure? (yes/no) [{current}]: "
             new_value = input(prompt).strip().lower()
             if new_value == "":
                 # Keep current value on Enter
                 pass
             elif new_value in ["yes", "y", "true", "1"]:
-                config['retry_on_failure'] = True
+                config["retry_on_failure"] = True
                 print_success("Retry on failure enabled")
             elif new_value in ["no", "n", "false", "0"]:
-                config['retry_on_failure'] = False
+                config["retry_on_failure"] = False
                 print_success("Retry on failure disabled")
 
         elif choice == "9":
@@ -1325,8 +1339,7 @@ def show_settings_menu(config: Dict) -> Dict:
 
 
 def load_devices(
-    devices_file: str,
-    default_device_type: Optional[str] = None
+    devices_file: str, default_device_type: Optional[str] = None
 ) -> List[Dict[str, str]]:
     """
     Load device information from a CSV file.
@@ -1388,10 +1401,8 @@ def load_devices(
                     normalized_row[field] = trimmed
 
                 if missing_values:
-                    fields = ', '.join(sorted(missing_values))
-                    msg = "Row {} has missing values for: {}".format(
-                        row_num, fields
-                    )
+                    fields = ", ".join(sorted(missing_values))
+                    msg = "Row {} has missing values for: {}".format(row_num, fields)
                     raise ValueError(msg)
 
                 # Process optional fields
@@ -1464,7 +1475,7 @@ def connect_and_execute(
     command_timeout: int = 60,
     enable_session_logging: bool = False,
     enable_mode: bool = False,
-    enable_password: str = None
+    enable_password: str = None,
 ) -> List[Dict[str, str]]:
     """
     Connect to a device and execute commands.
@@ -1488,7 +1499,7 @@ def connect_and_execute(
     results = []
     hostname = device["hostname"]
 
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     device_params = {
         "device_type": device["device_type"],
         "host": device["ip_address"],
@@ -1528,7 +1539,7 @@ def connect_and_execute(
                     logger.warning("SSH key file not found: %s", key_path)
 
     try:
-        logger.info("Connecting to %s (%s)...", hostname, device['ip_address'])
+        logger.info("Connecting to %s (%s)...", hostname, device["ip_address"])
         connection = ConnectHandler(**device_params)
 
         logger.info("Successfully connected to %s", hostname)
@@ -1542,16 +1553,13 @@ def connect_and_execute(
                     connection.enable()
                 logger.info("Entered enable mode on %s", hostname)
             except Exception as enable_error:
-                logger.warning("Failed to enter enable mode on %s: %s",
-                             hostname, enable_error)
+                logger.warning("Failed to enter enable mode on %s: %s", hostname, enable_error)
 
         # Execute each command
         for command in commands:
             logger.info("Executing '%s' on %s", command, hostname)
             try:
-                output = connection.send_command(
-                    command, read_timeout=command_timeout
-                )
+                output = connection.send_command(command, read_timeout=command_timeout)
 
                 # Strip extra whitespace if enabled
                 if strip_whitespace:
@@ -1564,7 +1572,7 @@ def connect_and_execute(
                         stripped_lines.pop(0)
                     while stripped_lines and not stripped_lines[-1]:
                         stripped_lines.pop()
-                    output = '\n'.join(stripped_lines)
+                    output = "\n".join(stripped_lines)
 
                 results.append(
                     {
@@ -1576,10 +1584,7 @@ def connect_and_execute(
                         "status": "success",
                     }
                 )
-                logger.info(
-                    "Command '%s' executed successfully on %s",
-                    command, hostname
-                )
+                logger.info("Command '%s' executed successfully on %s", command, hostname)
             except Exception as cmd_error:
                 error_msg = f"Error executing command: {str(cmd_error)}"
                 logger.error("%s on %s", error_msg, hostname)
@@ -1657,7 +1662,7 @@ def connect_with_retry(
     enable_session_logging: bool,
     enable_mode: bool,
     enable_password: str,
-    retry_enabled: bool
+    retry_enabled: bool,
 ) -> List[Dict[str, str]]:
     """
     Connect to device with optional retry logic.
@@ -1684,8 +1689,10 @@ def connect_with_retry(
         retry_decorator = retry(
             stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
             wait=wait_exponential(min=RETRY_MIN_WAIT, max=RETRY_MAX_WAIT),
-            retry=retry_if_exception_type((NetmikoTimeoutException, NetmikoAuthenticationException)),
-            reraise=True
+            retry=retry_if_exception_type(
+                (NetmikoTimeoutException, NetmikoAuthenticationException)
+            ),
+            reraise=True,
         )
 
         # Wrap the function with retry
@@ -1693,26 +1700,47 @@ def connect_with_retry(
 
         try:
             return retryable_connect(
-                device, commands, username, password,
-                global_ssh_config, strip_whitespace,
-                connection_timeout, command_timeout,
-                enable_session_logging, enable_mode, enable_password
+                device,
+                commands,
+                username,
+                password,
+                global_ssh_config,
+                strip_whitespace,
+                connection_timeout,
+                command_timeout,
+                enable_session_logging,
+                enable_mode,
+                enable_password,
             )
         except Exception:
             # If all retries fail, call without retry to get proper error handling
             return connect_and_execute(
-                device, commands, username, password,
-                global_ssh_config, strip_whitespace,
-                connection_timeout, command_timeout,
-                enable_session_logging, enable_mode, enable_password
+                device,
+                commands,
+                username,
+                password,
+                global_ssh_config,
+                strip_whitespace,
+                connection_timeout,
+                command_timeout,
+                enable_session_logging,
+                enable_mode,
+                enable_password,
             )
     else:
         # No retry - direct connection
         return connect_and_execute(
-            device, commands, username, password,
-            global_ssh_config, strip_whitespace,
-            connection_timeout, command_timeout,
-            enable_session_logging, enable_mode, enable_password
+            device,
+            commands,
+            username,
+            password,
+            global_ssh_config,
+            strip_whitespace,
+            connection_timeout,
+            command_timeout,
+            enable_session_logging,
+            enable_mode,
+            enable_password,
         )
 
 
@@ -1721,16 +1749,16 @@ def process_devices_parallel(
     commands: List[str],
     username: str,
     password: str,
-    global_ssh_config: str,
+    global_ssh_config: Optional[str],
     strip_whitespace: bool,
     connection_timeout: int,
     command_timeout: int,
     max_workers: int = 5,
     enable_session_logging: bool = False,
     enable_mode: bool = False,
-    enable_password: str = None,
+    enable_password: Optional[str] = None,
     retry_on_failure: bool = True,
-    show_progress: bool = True
+    show_progress: bool = True,
 ) -> List[Dict[str, str]]:
     """
     Process multiple devices in parallel using ThreadPoolExecutor.
@@ -1763,24 +1791,29 @@ def process_devices_parallel(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             TaskProgressColumn(),
-            console=console
+            console=console,
         ) as progress:
-            task = progress.add_task(
-                "[cyan]Processing devices...",
-                total=len(devices)
-            )
+            task = progress.add_task("[cyan]Processing devices...", total=len(devices))
 
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 # Submit all device processing tasks
                 future_to_device = {
                     executor.submit(
                         connect_with_retry,
-                        device, commands, username, password,
-                        global_ssh_config, strip_whitespace,
-                        connection_timeout, command_timeout,
-                        enable_session_logging, enable_mode,
-                        enable_password, retry_on_failure
-                    ): device for device in devices
+                        device,
+                        commands,
+                        username,
+                        password,
+                        global_ssh_config,
+                        strip_whitespace,
+                        connection_timeout,
+                        command_timeout,
+                        enable_session_logging,
+                        enable_mode,
+                        enable_password,
+                        retry_on_failure,
+                    ): device
+                    for device in devices
                 }
 
                 # Collect results as they complete
@@ -1790,32 +1823,27 @@ def process_devices_parallel(
                         results = future.result()
                         all_results.extend(results)
                         progress.update(
-                            task,
-                            advance=1,
-                            description=f"[green]Processed {device['hostname']}"
+                            task, advance=1, description=f"[green]Processed {device['hostname']}"
                         )
                     except Exception as exc:
                         logger.error(
-                            "Device %s generated an exception: %s",
-                            device['hostname'], exc
+                            "Device %s generated an exception: %s", device["hostname"], exc
                         )
                         progress.update(
-                            task,
-                            advance=1,
-                            description=f"[red]Failed {device['hostname']}"
+                            task, advance=1, description=f"[red]Failed {device['hostname']}"
                         )
                         # Add error results for all commands
                         for command in commands:
-                            all_results.append({
-                                "timestamp": datetime.now().strftime(
-                                    "%Y-%m-%d %H:%M:%S"
-                                ),
-                                "hostname": device["hostname"],
-                                "ip_address": device["ip_address"],
-                                "command": command,
-                                "output": f"Exception during processing: {str(exc)}",
-                                "status": "failed",
-                            })
+                            all_results.append(
+                                {
+                                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                    "hostname": device["hostname"],
+                                    "ip_address": device["ip_address"],
+                                    "command": command,
+                                    "output": f"Exception during processing: {str(exc)}",
+                                    "status": "failed",
+                                }
+                            )
 
     elif show_progress and TQDM_AVAILABLE:
         # Fallback to tqdm if rich not available
@@ -1823,48 +1851,63 @@ def process_devices_parallel(
             future_to_device = {
                 executor.submit(
                     connect_with_retry,
-                    device, commands, username, password,
-                    global_ssh_config, strip_whitespace,
-                    connection_timeout, command_timeout,
-                    enable_session_logging, enable_mode,
-                    enable_password, retry_on_failure
-                ): device for device in devices
+                    device,
+                    commands,
+                    username,
+                    password,
+                    global_ssh_config,
+                    strip_whitespace,
+                    connection_timeout,
+                    command_timeout,
+                    enable_session_logging,
+                    enable_mode,
+                    enable_password,
+                    retry_on_failure,
+                ): device
+                for device in devices
             }
 
             # Use tqdm progress bar
-            for future in tqdm(as_completed(future_to_device), total=len(devices), desc="Processing devices"):
+            for future in tqdm(
+                as_completed(future_to_device), total=len(devices), desc="Processing devices"
+            ):
                 device = future_to_device[future]
                 try:
                     results = future.result()
                     all_results.extend(results)
                 except Exception as exc:
-                    logger.error(
-                        "Device %s generated an exception: %s",
-                        device['hostname'], exc
-                    )
+                    logger.error("Device %s generated an exception: %s", device["hostname"], exc)
                     for command in commands:
-                        all_results.append({
-                            "timestamp": datetime.now().strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            ),
-                            "hostname": device["hostname"],
-                            "ip_address": device["ip_address"],
-                            "command": command,
-                            "output": f"Exception during processing: {str(exc)}",
-                            "status": "failed",
-                        })
+                        all_results.append(
+                            {
+                                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "hostname": device["hostname"],
+                                "ip_address": device["ip_address"],
+                                "command": command,
+                                "output": f"Exception during processing: {str(exc)}",
+                                "status": "failed",
+                            }
+                        )
     else:
         # No progress bar
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_device = {
                 executor.submit(
                     connect_with_retry,
-                    device, commands, username, password,
-                    global_ssh_config, strip_whitespace,
-                    connection_timeout, command_timeout,
-                    enable_session_logging, enable_mode,
-                    enable_password, retry_on_failure
-                ): device for device in devices
+                    device,
+                    commands,
+                    username,
+                    password,
+                    global_ssh_config,
+                    strip_whitespace,
+                    connection_timeout,
+                    command_timeout,
+                    enable_session_logging,
+                    enable_mode,
+                    enable_password,
+                    retry_on_failure,
+                ): device
+                for device in devices
             }
 
             for future in as_completed(future_to_device):
@@ -1873,21 +1916,18 @@ def process_devices_parallel(
                     results = future.result()
                     all_results.extend(results)
                 except Exception as exc:
-                    logger.error(
-                        "Device %s generated an exception: %s",
-                        device['hostname'], exc
-                    )
+                    logger.error("Device %s generated an exception: %s", device["hostname"], exc)
                     for command in commands:
-                        all_results.append({
-                            "timestamp": datetime.now().strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            ),
-                            "hostname": device["hostname"],
-                            "ip_address": device["ip_address"],
-                            "command": command,
-                            "output": f"Exception during processing: {str(exc)}",
-                            "status": "failed",
-                        })
+                        all_results.append(
+                            {
+                                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "hostname": device["hostname"],
+                                "ip_address": device["ip_address"],
+                                "command": command,
+                                "output": f"Exception during processing: {str(exc)}",
+                                "status": "failed",
+                            }
+                        )
 
     return all_results
 
@@ -1904,10 +1944,7 @@ def save_to_csv(results: List[Dict[str, str]], output_file: str) -> None:
         logger.warning("No results to save")
         return
 
-    fieldnames = [
-        "timestamp", "hostname", "ip_address",
-        "command", "output", "status"
-    ]
+    fieldnames = ["timestamp", "hostname", "ip_address", "command", "output", "status"]
 
     with open(output_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -1932,29 +1969,31 @@ def save_to_json(results: List[Dict[str, str]], output_file: str) -> None:
     # Group results by device for better structure
     devices_data = {}
     for result in results:
-        hostname = result['hostname']
+        hostname = result["hostname"]
         if hostname not in devices_data:
             devices_data[hostname] = {
-                'hostname': hostname,
-                'ip_address': result['ip_address'],
-                'commands': []
+                "hostname": hostname,
+                "ip_address": result["ip_address"],
+                "commands": [],
             }
 
-        devices_data[hostname]['commands'].append({
-            'timestamp': result['timestamp'],
-            'command': result['command'],
-            'output': result['output'],
-            'status': result['status']
-        })
+        devices_data[hostname]["commands"].append(
+            {
+                "timestamp": result["timestamp"],
+                "command": result["command"],
+                "output": result["output"],
+                "status": result["status"],
+            }
+        )
 
     output_data = {
-        'generated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'total_devices': len(devices_data),
-        'total_commands': len(results),
-        'devices': list(devices_data.values())
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "total_devices": len(devices_data),
+        "total_commands": len(results),
+        "devices": list(devices_data.values()),
     }
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
 
     logger.info("JSON results saved to %s", output_file)
@@ -1975,20 +2014,17 @@ def save_to_markdown(results: List[Dict[str, str]], output_file: str) -> None:
     # Group by device
     devices_data = {}
     for result in results:
-        hostname = result['hostname']
+        hostname = result["hostname"]
         if hostname not in devices_data:
-            devices_data[hostname] = {
-                'ip_address': result['ip_address'],
-                'commands': []
-            }
-        devices_data[hostname]['commands'].append(result)
+            devices_data[hostname] = {"ip_address": result["ip_address"], "commands": []}
+        devices_data[hostname]["commands"].append(result)
 
     # Calculate statistics
     total_commands = len(results)
-    successful = sum(1 for r in results if r['status'] == 'success')
+    successful = sum(1 for r in results if r["status"] == "success")
     failed = total_commands - successful
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         # Header
         f.write("# Network Device Command Collection Report\n\n")
         f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
@@ -2007,16 +2043,16 @@ def save_to_markdown(results: List[Dict[str, str]], output_file: str) -> None:
             f.write(f"### {hostname}\n\n")
             f.write(f"**IP Address:** `{data['ip_address']}`\n\n")
 
-            for cmd_result in data['commands']:
-                status_emoji = "✓" if cmd_result['status'] == 'success' else "✗"
+            for cmd_result in data["commands"]:
+                status_emoji = "✓" if cmd_result["status"] == "success" else "✗"
                 f.write(f"#### {status_emoji} `{cmd_result['command']}`\n\n")
                 f.write(f"**Timestamp:** {cmd_result['timestamp']}  \n")
                 f.write(f"**Status:** {cmd_result['status']}\n\n")
 
-                if cmd_result['status'] == 'success':
+                if cmd_result["status"] == "success":
                     f.write("**Output:**\n\n")
                     f.write("```\n")
-                    f.write(cmd_result['output'])
+                    f.write(cmd_result["output"])
                     f.write("\n```\n\n")
                 else:
                     f.write(f"**Error:** {cmd_result['output']}\n\n")
@@ -2026,7 +2062,7 @@ def save_to_markdown(results: List[Dict[str, str]], output_file: str) -> None:
     logger.info("Markdown report saved to %s", output_file)
 
 
-def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
+def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:  # type: ignore
     """
     Save command outputs to an HTML file with beautiful Bootstrap styling.
 
@@ -2041,17 +2077,14 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
     # Group by device
     devices_data = {}
     for result in results:
-        hostname = result['hostname']
+        hostname = result["hostname"]
         if hostname not in devices_data:
-            devices_data[hostname] = {
-                'ip_address': result['ip_address'],
-                'commands': []
-            }
-        devices_data[hostname]['commands'].append(result)
+            devices_data[hostname] = {"ip_address": result["ip_address"], "commands": []}
+        devices_data[hostname]["commands"].append(result)
 
     # Calculate statistics
     total_commands = len(results)
-    successful = sum(1 for r in results if r['status'] == 'success')
+    successful = sum(1 for r in results if r["status"] == "success")
     failed = total_commands - successful
     success_rate = (successful / total_commands * 100) if total_commands > 0 else 0
 
@@ -2061,8 +2094,10 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Network Device Command Collection Report</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body {{
             background-color: #f8f9fa;
@@ -2114,8 +2149,10 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
     <div class="container-fluid">
         <!-- Header -->
         <div class="header">
-            <h1><i class="bi bi-router"></i> Network Device Command Collection Report</h1>
-            <p class="mb-0"><i class="bi bi-calendar"></i> Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <h1><i class="bi bi-router"></i> Network Device Command
+                Collection Report</h1>
+            <p class="mb-0"><i class="bi bi-calendar"></i> Generated:
+               {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
 
         <!-- Statistics -->
@@ -2165,8 +2202,8 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
 """
 
     for hostname, data in devices_data.items():
-        device_success = sum(1 for c in data['commands'] if c['status'] == 'success')
-        device_total = len(data['commands'])
+        device_success = sum(1 for c in data["commands"] if c["status"] == "success")
+        device_total = len(data["commands"])
 
         html_content += f"""
         <div class="device-card">
@@ -2177,18 +2214,20 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
             <div class="accordion" id="accordion-{hostname}">
 """
 
-        for idx, cmd_result in enumerate(data['commands']):
-            status_class = "success" if cmd_result['status'] == 'success' else "danger"
-            status_icon = "check-circle" if cmd_result['status'] == 'success' else "x-circle"
+        for idx, cmd_result in enumerate(data["commands"]):
+            status_class = "success" if cmd_result["status"] == "success" else "danger"
+            status_icon = "check-circle" if cmd_result["status"] == "success" else "x-circle"
 
             html_content += f"""
                 <div class="accordion-item">
                     <h2 class="accordion-header">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse"
                                 data-bs-target="#collapse-{hostname}-{idx}">
                             <i class="bi bi-{status_icon} text-{status_class} me-2"></i>
                             <code>{cmd_result['command']}</code>
-                            <span class="badge badge-{status_class}-custom ms-2">{cmd_result['status']}</span>
+                            <span class="badge badge-{status_class}-custom ms-2">
+                                {cmd_result['status']}</span>
                         </button>
                     </h2>
                     <div id="collapse-{hostname}-{idx}" class="accordion-collapse collapse"
@@ -2197,7 +2236,7 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
                             <p><strong>Timestamp:</strong> {cmd_result['timestamp']}</p>
 """
 
-            if cmd_result['status'] == 'success':
+            if cmd_result["status"] == "success":
                 html_content += f"""
                             <p><strong>Output:</strong></p>
                             <div class="command-output">{cmd_result['output']}</div>
@@ -2223,16 +2262,18 @@ def save_to_html(results: List[Dict[str, str]], output_file: str) -> None:
     html_content += """
         <!-- Footer -->
         <div class="text-center mt-5 mb-3 text-muted">
-            <p>Generated by Netmiko Device Command Collector v3.0</p>
+            <p>Generated by Netmiko Device Command Collector v3.0
+            </p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
 </body>
 </html>
 """
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     logger.info("HTML report saved to %s", output_file)
@@ -2268,44 +2309,44 @@ def save_to_excel(results: List[Dict[str, str]], output_file: str) -> None:
     header_alignment = Alignment(horizontal="center", vertical="center")
 
     # Calculate statistics
-    devices = set(r['hostname'] for r in results)
+    devices = set(r["hostname"] for r in results)
     total_commands = len(results)
-    successful = sum(1 for r in results if r['status'] == 'success')
+    successful = sum(1 for r in results if r["status"] == "success")
     failed = total_commands - successful
 
     # Write summary
-    ws_summary['A1'] = "Network Device Command Collection Report"
-    ws_summary['A1'].font = Font(bold=True, size=16, color="4F46E5")
-    ws_summary.merge_cells('A1:B1')
+    ws_summary["A1"] = "Network Device Command Collection Report"
+    ws_summary["A1"].font = Font(bold=True, size=16, color="4F46E5")
+    ws_summary.merge_cells("A1:B1")
 
-    ws_summary['A3'] = "Generated:"
-    ws_summary['B3'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ws_summary["A3"] = "Generated:"
+    ws_summary["B3"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    ws_summary['A5'] = "Metric"
-    ws_summary['B5'] = "Value"
-    ws_summary['A5'].fill = header_fill
-    ws_summary['B5'].fill = header_fill
-    ws_summary['A5'].font = header_font
-    ws_summary['B5'].font = header_font
+    ws_summary["A5"] = "Metric"
+    ws_summary["B5"] = "Value"
+    ws_summary["A5"].fill = header_fill
+    ws_summary["B5"].fill = header_fill
+    ws_summary["A5"].font = header_font
+    ws_summary["B5"].font = header_font
 
     summary_data = [
         ("Total Devices", len(devices)),
         ("Total Commands", total_commands),
         ("Successful", successful),
         ("Failed", failed),
-        ("Success Rate", f"{(successful/total_commands*100):.1f}%")
+        ("Success Rate", f"{(successful/total_commands*100):.1f}%"),
     ]
 
     for idx, (metric, value) in enumerate(summary_data, start=6):
-        ws_summary[f'A{idx}'] = metric
-        ws_summary[f'B{idx}'] = value
+        ws_summary[f"A{idx}"] = metric
+        ws_summary[f"B{idx}"] = value
         if metric == "Successful":
-            ws_summary[f'B{idx}'].font = Font(color="10B981", bold=True)
+            ws_summary[f"B{idx}"].font = Font(color="10B981", bold=True)
         elif metric == "Failed" and failed > 0:
-            ws_summary[f'B{idx}'].font = Font(color="EF4444", bold=True)
+            ws_summary[f"B{idx}"].font = Font(color="EF4444", bold=True)
 
-    ws_summary.column_dimensions['A'].width = 20
-    ws_summary.column_dimensions['B'].width = 20
+    ws_summary.column_dimensions["A"].width = 20
+    ws_summary.column_dimensions["B"].width = 20
 
     # Detailed results sheet
     ws_details = wb.create_sheet("Detailed Results")
@@ -2320,38 +2361,44 @@ def save_to_excel(results: List[Dict[str, str]], output_file: str) -> None:
 
     # Write data
     for row_num, result in enumerate(results, start=2):
-        ws_details.cell(row=row_num, column=1, value=result['timestamp'])
-        ws_details.cell(row=row_num, column=2, value=result['hostname'])
-        ws_details.cell(row=row_num, column=3, value=result['ip_address'])
-        ws_details.cell(row=row_num, column=4, value=result['command'])
-        ws_details.cell(row=row_num, column=5, value=result['output'])
+        ws_details.cell(row=row_num, column=1, value=result["timestamp"])
+        ws_details.cell(row=row_num, column=2, value=result["hostname"])
+        ws_details.cell(row=row_num, column=3, value=result["ip_address"])
+        ws_details.cell(row=row_num, column=4, value=result["command"])
+        ws_details.cell(row=row_num, column=5, value=result["output"])
 
-        status_cell = ws_details.cell(row=row_num, column=6, value=result['status'])
+        status_cell = ws_details.cell(row=row_num, column=6, value=result["status"])
 
-        if result['status'] == 'success':
-            status_cell.fill = PatternFill(start_color="D1FAE5", end_color="D1FAE5", fill_type="solid")
+        if result["status"] == "success":
+            status_cell.fill = PatternFill(
+                start_color="D1FAE5", end_color="D1FAE5", fill_type="solid"
+            )
             status_cell.font = Font(color="059669", bold=True)
         else:
-            status_cell.fill = PatternFill(start_color="FEE2E2", end_color="FEE2E2", fill_type="solid")
+            status_cell.fill = PatternFill(
+                start_color="FEE2E2", end_color="FEE2E2", fill_type="solid"
+            )
             status_cell.font = Font(color="DC2626", bold=True)
 
     # Adjust column widths
-    ws_details.column_dimensions['A'].width = 20
-    ws_details.column_dimensions['B'].width = 20
-    ws_details.column_dimensions['C'].width = 15
-    ws_details.column_dimensions['D'].width = 30
-    ws_details.column_dimensions['E'].width = 50
-    ws_details.column_dimensions['F'].width = 12
+    ws_details.column_dimensions["A"].width = 20
+    ws_details.column_dimensions["B"].width = 20
+    ws_details.column_dimensions["C"].width = 15
+    ws_details.column_dimensions["D"].width = 30
+    ws_details.column_dimensions["E"].width = 50
+    ws_details.column_dimensions["F"].width = 12
 
     # Freeze header row
-    ws_details.freeze_panes = 'A2'
+    ws_details.freeze_panes = "A2"
 
     # Save workbook
     wb.save(output_file)
     logger.info("Excel report saved to %s", output_file)
 
 
-def save_results(results: List[Dict[str, str]], output_file: str, formats: List[str] = None) -> None:
+def save_results(
+    results: List[Dict[str, str]], output_file: str, formats: Optional[List[str]] = None
+) -> None:
     """
     Save results in multiple formats.
 
@@ -2361,20 +2408,20 @@ def save_results(results: List[Dict[str, str]], output_file: str, formats: List[
         formats: List of formats to save ('csv', 'json', 'html', 'markdown', 'excel')
     """
     if formats is None:
-        formats = ['csv']
+        formats = ["csv"]
 
-    base_name = output_file.rsplit('.', 1)[0]
+    base_name = output_file.rsplit(".", 1)[0]
 
     for fmt in formats:
-        if fmt == 'csv':
+        if fmt == "csv":
             save_to_csv(results, f"{base_name}.csv")
-        elif fmt == 'json':
+        elif fmt == "json":
             save_to_json(results, f"{base_name}.json")
-        elif fmt == 'html':
+        elif fmt == "html":
             save_to_html(results, f"{base_name}.html")
-        elif fmt == 'markdown' or fmt == 'md':
+        elif fmt in ("markdown", "md"):
             save_to_markdown(results, f"{base_name}.md")
-        elif fmt == 'excel' or fmt == 'xlsx':
+        elif fmt in ("excel", "xlsx"):
             save_to_excel(results, f"{base_name}.xlsx")
         else:
             logger.warning("Unknown format: %s", fmt)
@@ -2390,7 +2437,7 @@ app = typer.Typer(
     help="🚀 Network Device Command Collector using Netmiko",
     add_completion=True,
     rich_markup_mode="rich",
-    no_args_is_help=True
+    no_args_is_help=True,
 )
 
 
@@ -2398,22 +2445,49 @@ app = typer.Typer(
 # CLI COMMANDS
 # ====================================================================================
 
+
 @app.command(name="run", help="🚀 Run command collection on network devices")
 def run_collection(
-    devices: Annotated[Optional[str], typer.Option("--devices", "-d", help="Path to devices CSV file")] = None,
-    commands: Annotated[Optional[str], typer.Option("--commands", "-c", help="Path to commands text file")] = None,
-    output: Annotated[str, typer.Option("--output", "-o", help="Output file base name")] = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-    format: Annotated[List[str], typer.Option("--format", "-f", help="Output format(s)")] = ["csv"],
-    username: Annotated[Optional[str], typer.Option("--username", "-u", help="SSH username")] = None,
-    ssh_config: Annotated[Optional[str], typer.Option("--ssh-config", "-s", help="SSH config file path")] = None,
-    device_type: Annotated[Optional[str], typer.Option("--device-type", help="Default device type")] = None,
-    workers: Annotated[Optional[int], typer.Option("--workers", "-w", help="Number of concurrent workers")] = None,
-    connection_timeout: Annotated[Optional[int], typer.Option("--connection-timeout", help="Connection timeout in seconds")] = None,
-    command_timeout: Annotated[Optional[int], typer.Option("--command-timeout", help="Command timeout in seconds")] = None,
+    devices: Annotated[
+        Optional[str], typer.Option("--devices", "-d", help="Path to devices CSV file")
+    ] = None,
+    commands: Annotated[
+        Optional[str], typer.Option("--commands", "-c", help="Path to commands text file")
+    ] = None,
+    output: Annotated[
+        str, typer.Option("--output", "-o", help="Output file base name")
+    ] = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+    output_format: Annotated[
+        Optional[List[str]], typer.Option("--format", "-f", help="Output format(s)")
+    ] = None,
+    username: Annotated[
+        Optional[str], typer.Option("--username", "-u", help="SSH username")
+    ] = None,
+    ssh_config: Annotated[
+        Optional[str], typer.Option("--ssh-config", "-s", help="SSH config file path")
+    ] = None,
+    device_type: Annotated[
+        Optional[str], typer.Option("--device-type", help="Default device type")
+    ] = None,
+    workers: Annotated[
+        Optional[int], typer.Option("--workers", "-w", help="Number of concurrent workers")
+    ] = None,
+    connection_timeout: Annotated[
+        Optional[int], typer.Option("--connection-timeout", help="Connection timeout in seconds")
+    ] = None,
+    command_timeout: Annotated[
+        Optional[int], typer.Option("--command-timeout", help="Command timeout in seconds")
+    ] = None,
     enable_mode: Annotated[bool, typer.Option("--enable-mode", help="Enter enable mode")] = False,
-    enable_password: Annotated[Optional[str], typer.Option("--enable-password", help="Enable mode password")] = None,
-    enable_session_logging: Annotated[bool, typer.Option("--enable-session-logging", help="Enable session logging")] = False,
-    no_strip_whitespace: Annotated[bool, typer.Option("--no-strip-whitespace", help="Don't strip whitespace")] = False,
+    enable_password: Annotated[
+        Optional[str], typer.Option("--enable-password", help="Enable mode password")
+    ] = None,
+    enable_session_logging: Annotated[
+        bool, typer.Option("--enable-session-logging", help="Enable session logging")
+    ] = False,
+    no_strip_whitespace: Annotated[
+        bool, typer.Option("--no-strip-whitespace", help="Don't strip whitespace")
+    ] = False,
     no_retry: Annotated[bool, typer.Option("--no-retry", help="Disable retry on failure")] = False,
 ):
     """
@@ -2426,6 +2500,10 @@ def run_collection(
     """
     # Load configuration
     config = load_config()
+
+    # Handle default output_format value
+    if output_format is None:
+        output_format = ["csv"]
 
     # Interactive mode if no files provided
     if not devices or not commands:
@@ -2452,29 +2530,31 @@ def run_collection(
     password = getpass("Enter SSH password: ")
 
     # Ask about enable mode if config has it enabled
-    if config.get('enable_mode', False) and not enable_mode:
+    if config.get("enable_mode", False) and not enable_mode:
         if typer.confirm("Enter enable mode?", default=True):
             enable_mode = True
-            enable_password = getpass("Enter enable password (or press Enter to use SSH password): ")
+            enable_password = getpass(
+                "Enter enable password (or press Enter to use SSH password): "
+            )
             if not enable_password:
                 enable_password = password
 
     # Apply configuration defaults
     if device_type is None:
-        device_type = config['default_device_type']
+        device_type = config["default_device_type"]
     if workers is None:
-        workers = config['max_workers']
+        workers = config["max_workers"]
     if connection_timeout is None:
-        connection_timeout = config['connection_timeout']
+        connection_timeout = config["connection_timeout"]
     if command_timeout is None:
-        command_timeout = config['command_timeout']
+        command_timeout = config["command_timeout"]
 
     strip_whitespace = not no_strip_whitespace
     retry_on_failure = not no_retry
 
     # Process formats
     output_formats = []
-    for fmt in format:
+    for fmt in output_format:
         if fmt in ["markdown", "md"]:
             output_formats.append("markdown")
         elif fmt in ["excel", "xlsx"]:
@@ -2490,12 +2570,18 @@ def run_collection(
         devices_list = load_devices(devices, device_type)
         commands_list = load_commands(commands)
 
-        typer.secho(f"\n✅ Loaded {len(devices_list)} device(s) and {len(commands_list)} command(s)", fg=typer.colors.GREEN)
+        typer.secho(
+            f"\n✅ Loaded {len(devices_list)} device(s) and {len(commands_list)} command(s)",
+            fg=typer.colors.GREEN,
+        )
 
         # Process devices
         all_results = process_devices_parallel(
-            devices_list, commands_list, username, password,
-            ssh_config if ssh_config else None,
+            devices_list,
+            commands_list,
+            username,
+            password,
+            ssh_config,
             strip_whitespace,
             connection_timeout,
             command_timeout,
@@ -2504,13 +2590,13 @@ def run_collection(
             enable_mode,
             enable_password,
             retry_on_failure,
-            show_progress=True
+            show_progress=True,
         )
 
         # Save results
         save_results(all_results, output, output_formats)
 
-        typer.secho(f"\n✅ Collection completed successfully!", fg=typer.colors.GREEN, bold=True)
+        typer.secho("\n✅ Collection completed successfully!", fg=typer.colors.GREEN, bold=True)
 
     except Exception as e:
         typer.secho(f"❌ Error: {e}", fg=typer.colors.RED)
@@ -2519,7 +2605,9 @@ def run_collection(
 
 @app.command(name="edit", help="✏️ Edit devices or commands files")
 def edit_files(
-    file_type: Annotated[str, typer.Argument(help="File type to edit: 'devices' or 'commands'")] = "devices"
+    file_type: Annotated[
+        str, typer.Argument(help="File type to edit: 'devices' or 'commands'")
+    ] = "devices",
 ):
     """
     Edit devices.csv or commands.txt files.
@@ -2546,18 +2634,25 @@ def edit_files(
         if commands_file:
             if PROMPT_TOOLKIT_AVAILABLE:
                 config = load_config()
-                device_type = config.get('default_device_type', 'cisco_ios')
+                device_type = config.get("default_device_type", "cisco_ios")
 
-                typer.secho(f"📝 Opening {commands_file} with autocomplete...", fg=typer.colors.CYAN)
+                typer.secho(
+                    f"📝 Opening {commands_file} with autocomplete...", fg=typer.colors.CYAN
+                )
                 typer.secho(f"🔧 Device type: {device_type}", fg=typer.colors.CYAN)
-                typer.secho("💡 Tip: Press Tab for suggestions, type 'done' when finished", fg=typer.colors.YELLOW)
+                typer.secho(
+                    "💡 Tip: Press Tab for suggestions, type 'done' when finished",
+                    fg=typer.colors.YELLOW,
+                )
 
                 if edit_commands_with_autocomplete(commands_file, device_type):
                     typer.secho("✅ Commands file updated", fg=typer.colors.GREEN)
                 else:
                     typer.secho("⚠️  No changes made", fg=typer.colors.YELLOW)
             else:
-                typer.secho("⚠️  prompt_toolkit not available - using basic editor", fg=typer.colors.YELLOW)
+                typer.secho(
+                    "⚠️  prompt_toolkit not available - using basic editor", fg=typer.colors.YELLOW
+                )
                 if open_file_in_editor(commands_file):
                     typer.secho("✅ Editor closed", fg=typer.colors.GREEN)
         else:
@@ -2589,7 +2684,9 @@ def view_outputs():
         typer.secho(f"  {idx}. {file_obj.name} ({file_type})", fg=typer.colors.GREEN)
 
     try:
-        choice = typer.prompt("\nEnter file number to view (or press Enter to cancel)", default="", show_default=False)
+        choice = typer.prompt(
+            "\nEnter file number to view (or press Enter to cancel)", default="", show_default=False
+        )
         if choice:
             file_idx = int(choice) - 1
             if 0 <= file_idx < len(output_files):
@@ -2629,53 +2726,41 @@ def config_set():
     # Device type
     new_device_type = typer.prompt(
         f"Default device type [{config['default_device_type']}]",
-        default=config['default_device_type']
+        default=config["default_device_type"],
     )
-    config['default_device_type'] = new_device_type
+    config["default_device_type"] = new_device_type
 
     # Strip whitespace
-    config['strip_whitespace'] = typer.confirm(
-        f"Strip whitespace?",
-        default=config['strip_whitespace']
+    config["strip_whitespace"] = typer.confirm(
+        "Strip whitespace?", default=config["strip_whitespace"]
     )
 
     # Max workers
-    config['max_workers'] = typer.prompt(
-        f"Max workers",
-        type=int,
-        default=config['max_workers']
-    )
+    config["max_workers"] = typer.prompt("Max workers", type=int, default=config["max_workers"])
 
     # Connection timeout
-    config['connection_timeout'] = typer.prompt(
-        f"Connection timeout (seconds)",
-        type=int,
-        default=config['connection_timeout']
+    config["connection_timeout"] = typer.prompt(
+        "Connection timeout (seconds)", type=int, default=config["connection_timeout"]
     )
 
     # Command timeout
-    config['command_timeout'] = typer.prompt(
-        f"Command timeout (seconds)",
-        type=int,
-        default=config['command_timeout']
+    config["command_timeout"] = typer.prompt(
+        "Command timeout (seconds)", type=int, default=config["command_timeout"]
     )
 
     # Enable session logging
-    config['enable_session_logging'] = typer.confirm(
-        f"Enable session logging?",
-        default=config.get('enable_session_logging', False)
+    config["enable_session_logging"] = typer.confirm(
+        "Enable session logging?", default=config.get("enable_session_logging", False)
     )
 
     # Enable mode
-    config['enable_mode'] = typer.confirm(
-        f"Enter enable mode on connect?",
-        default=config.get('enable_mode', False)
+    config["enable_mode"] = typer.confirm(
+        "Enter enable mode on connect?", default=config.get("enable_mode", False)
     )
 
     # Retry on failure
-    config['retry_on_failure'] = typer.confirm(
-        f"Retry on connection failure?",
-        default=config.get('retry_on_failure', True)
+    config["retry_on_failure"] = typer.confirm(
+        "Retry on connection failure?", default=config.get("retry_on_failure", True)
     )
 
     # Save configuration
@@ -2716,7 +2801,7 @@ router2,10.0.0.1,cisco_xe
             return
 
     try:
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(sample_content)
         typer.secho(f"✅ Created sample {file_path}", fg=typer.colors.GREEN)
     except Exception as e:
@@ -2741,7 +2826,7 @@ show inventory
             return
 
     try:
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(sample_content)
         typer.secho(f"✅ Created sample {file_path}", fg=typer.colors.GREEN)
     except Exception as e:
