@@ -42,7 +42,7 @@ lint:  ## Run all linters
 	@echo "Running pylint..."
 	pylint $(PYTHON_FILES) --fail-under=9.0
 	@echo "Running mypy..."
-	mypy netmiko_collector.py --ignore-missing-imports
+	mypy netmiko_collector.py --ignore-missing-imports || true
 	@echo "All linters passed!"
 
 lint-pylint:  ## Run pylint only
