@@ -1,5 +1,17 @@
 # Netmiko Device Command Collector Dependencies
 # Install with: pip install -r requirements.txt
 
+# Core dependencies
 netmiko>=4.3.0
 paramiko>=3.4.0
+
+# CLI framework
+typer[all]>=0.9.0     # Modern CLI framework with rich integration
+click>=8.0.0          # Required by typer
+
+# CLI enhancements (optional but recommended)
+rich>=13.0.0          # Beautiful terminal formatting and progress bars
+tqdm>=4.65.0          # Fallback progress bars
+tenacity>=8.2.0       # Retry logic for network failures
+openpyxl>=3.1.0       # Excel output with formatting
+prompt_toolkit>=3.0.0 # Interactive autocomplete for command editing
