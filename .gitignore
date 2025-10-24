@@ -1,8 +1,12 @@
 # Log files
 *.log
 
-# Output CSV files
+# Output files
 output_*.csv
+output_*.json
+output_*.html
+output_*.md
+output_*.xlsx
 
 # Session logs
 session_*.log
