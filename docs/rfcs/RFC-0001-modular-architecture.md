@@ -14,7 +14,7 @@
 
 ## Executive Summary
 
-This RFC proposes refactoring the current monolithic 2,837-line `netmiko_collector.py` into a modular architecture with 8-10 focused modules under a `/src/netmiko_collector/` structure. This change will improve testability, maintainability, and extensibility while maintaining full backward compatibility for existing users.
+This RFC proposes a **complete rewrite** of the current monolithic 2,837-line `netmiko_collector.py` into a modern, modular architecture with 8-10 focused modules under a `/src/netmiko_collector/` structure. This change will improve testability, maintainability, and extensibility with a clean-slate approach.
 
 **Key Benefits**:
 - Test coverage improvement from 20% to >80%
@@ -23,8 +23,10 @@ This RFC proposes refactoring the current monolithic 2,837-line `netmiko_collect
 - Easier unit testing per module
 - Better code reusability
 - Simplified onboarding for contributors
+- Modern Python best practices (type hints, dataclasses, protocols)
+- Clean architecture without legacy constraints
 
-**Migration Strategy**: Gradual extraction with feature flags, maintaining backward compatibility throughout.
+**Migration Strategy**: Complete rewrite approach approved by maintainer. No backward compatibility constraints. Focus on best practices and optimal design.
 
 ---
 
@@ -197,157 +199,147 @@ cli.py
 
 ---
 
-## Migration Strategy
+## Migration Strategy - Complete Rewrite Approach
 
-### Phase 1: Preparation (Week 1-2)
-**Goal**: Establish safety net before changes
+**Note**: Maintainer has approved a complete codebase rework with no backward compatibility requirements. This enables us to use modern best practices and optimal design patterns without legacy constraints.
 
-1. **Increase Test Coverage** (TEST-001)
-   - Add unit tests for existing functions
-   - Target: 50% coverage minimum
-   - Focus on complex functions first
-   - Create fixtures for test data
+### Phase 1: Foundation & Architecture (Week 1-2)
+**Goal**: Establish new codebase structure with modern patterns
 
-2. **Create Module Stubs**
-   - Create `/src/netmiko_collector/` directory
-   - Create empty module files with docstrings
-   - Add `__init__.py` with version export
-   - Verify imports work
+1. **Create New Module Structure**
+   - Create `/src/netmiko_collector/` package
+   - Set up modern Python packaging (pyproject.toml)
+   - Configure strict type checking (mypy --strict)
+   - Set up comprehensive test structure in `/tests`
 
-3. **Set Up CI Gates**
-   - Enforce minimum coverage in CI
-   - Add import verification tests
-   - Configure mypy for new modules
+2. **Define Core Models & Protocols**
+   - Create modern dataclasses with validation (pydantic)
+   - Define Protocol interfaces for extensibility
+   - Implement proper error hierarchy
+   - Add comprehensive type hints
 
-### Phase 2: Extract Utilities (Week 3)
-**Goal**: Move standalone functions first (low risk)
+3. **Establish Testing Framework**
+   - Set up pytest with fixtures
+   - Configure coverage reporting (>80% target)
+   - Create mock factories for SSH/devices
+   - Set up CI with strict quality gates
 
-1. **Extract `utils.py`**
-   - Move: `expand_path()`, `get_positive_int_input()`
-   - Add unit tests for each function
-   - Update imports in main file
-   - Verify all tests pass
+### Phase 2: Core Modules (Week 3-4)
+**Goal**: Implement foundation modules with best practices
 
-2. **Extract `ui.py`**
-   - Move: `print_banner()`, `print_success()`, etc.
-   - Move: `select_from_menu()`
-   - Add unit tests
-   - Update imports
+1. **Implement `models.py`**
+   - Device, Command, Result dataclasses
+   - Validation using pydantic or dataclasses
+   - Immutable where appropriate
+   - Comprehensive unit tests
 
-3. **Extract `models.py`**
-   - Create: `Device`, `Command`, `Result` dataclasses
-   - Gradually replace dict usage
-   - Add validation methods
+2. **Implement `config.py`**
+   - Type-safe configuration management
+   - Environment variable support
+   - Validation and defaults
+   - JSON/YAML support
 
-### Phase 3: Extract Core Logic (Week 4-5)
-**Goal**: Move business logic modules
+3. **Implement `utils.py`**
+   - Pure functions for common operations
+   - Full type coverage
+   - Comprehensive tests
+   - No side effects
 
-1. **Extract `config.py`**
-   - Create `Config` class
-   - Move configuration functions
-   - Add unit tests for load/save
-   - Maintain backward compatibility
+### Phase 3: Business Logic (Week 4-6)
+**Goal**: Implement core functionality with clean architecture
 
-2. **Extract `devices.py`**
-   - Move `load_devices()` function
-   - Add validation logic
-   - Use `Device` model
-   - Add comprehensive tests
+1. **Implement `devices.py` & `commands.py`**
+   - CSV parsing with proper error handling
+   - Data validation and transformation
+   - Device grouping and filtering
+   - Full test coverage
 
-3. **Extract `commands.py`**
-   - Move `load_commands()` function
-   - Move `DEVICE_COMMANDS` database
-   - Add tests for all device types
+2. **Implement `ssh.py`**
+   - Modern SSH connection handling
+   - Context managers for resource cleanup
+   - Retry logic with exponential backoff
+   - Comprehensive error handling
+   - Extensive mocking tests
 
-### Phase 4: Extract SSH & Execution (Week 6-7)
-**Goal**: Move complex SSH logic (highest risk)
+3. **Implement `executor.py`**
+   - ThreadPoolExecutor/ProcessPoolExecutor orchestration
+   - Progress tracking with Rich
+   - Error aggregation
+   - Cancellation support
 
-1. **Extract `ssh.py`**
-   - Create `SSHConnection` class
-   - Move `connect_and_execute()`
-   - Move retry logic
-   - Extensive mocking in tests
-   - Maintain exact behavior
+### Phase 4: Output & UI (Week 6-7)
+**Goal**: Implement formatters and user interface
 
-2. **Extract `executor.py`**
-   - Create `ParallelExecutor` class
-   - Move `process_devices_parallel()`
-   - Add progress tracking
-   - Test with mock devices
+1. **Implement Formatter Framework**
+   - Protocol-based formatter interface
+   - Plugin system for extensibility
+   - Factory pattern for formatter selection
+   - Tests for each formatter
 
-### Phase 5: Extract Formatters (Week 8)
-**Goal**: Modularize output generation
+2. **Implement `ui.py`**
+   - Rich-based progress and output
+   - Interactive menus
+   - Error display
+   - Logging integration
 
-1. **Create Formatter Framework**
-   - Create `formatters/` package
-   - Create `base.py` with `OutputFormatter` ABC
-   - Create formatter registry
+### Phase 5: CLI & Integration (Week 7-8)
+**Goal**: Wire everything together with modern CLI
 
-2. **Extract Individual Formatters**
-   - Move each `save_to_*()` function to own file
-   - Implement `OutputFormatter` interface
-   - Add tests for each formatter
-   - Verify output format unchanged
-
-### Phase 6: Extract CLI (Week 9)
-**Goal**: Finalize with CLI layer
-
-1. **Extract `cli.py`**
-   - Move Typer command definitions
-   - Wire up all modules
-   - Maintain exact CLI behavior
-   - Add CLI integration tests
+1. **Implement `cli.py`**
+   - Typer-based command structure
+   - Subcommands for different operations
+   - Rich help and error messages
+   - Shell completion support
 
 2. **Create Entry Points**
-   - Create `__main__.py`
-   - Update `pyproject.toml` entry points
-   - Test both execution methods
+   - `__main__.py` for module execution
+   - Console script in pyproject.toml
+   - Proper signal handling
+   - Graceful shutdown
 
-### Phase 7: Cleanup & Polish (Week 10)
-**Goal**: Finalize migration
+### Phase 6: Testing & Documentation (Week 8-10)
+**Goal**: Achieve production-ready quality
 
-1. **Remove Old File**
-   - Verify all functionality migrated
-   - Run full test suite
-   - Keep old file as `netmiko_collector_legacy.py` for one release
-   - Add deprecation warning if imported
+1. **Comprehensive Testing**
+   - Unit tests for all modules (>80% coverage)
+   - Integration tests with mocked SSH
+   - End-to-end tests with fixtures
+   - Performance tests
 
-2. **Documentation Updates**
-   - Update all documentation for new structure
-   - Add migration guide for contributors
-   - Update CODEMAP.md
-   - Add API documentation
+2. **Documentation**
+   - API documentation with sphinx
+   - User guide with examples
+   - Architecture documentation
+   - Contributing guide
 
-3. **Performance Verification**
-   - Benchmark before/after
-   - Ensure no performance regression
-   - Optimize if needed
+3. **Quality Assurance**
+   - Fix all mypy errors (--strict mode)
+   - Security scan (bandit, safety)
+   - Performance profiling
+   - Code review
 
 ---
 
-## Backward Compatibility Strategy
+## Compatibility & Migration Notes
 
-### For End Users
-**Guarantee**: No changes to CLI interface or behavior
+### No Backward Compatibility Requirements
+**Maintainer Decision**: Complete rework approved with no backward compatibility constraints.
 
-1. **CLI Commands Unchanged**
-   ```bash
-   # These work exactly the same:
-   python netmiko_collector.py run -d devices.csv -c commands.txt
-   netmiko-collector run -d devices.csv -c commands.txt
-   ```
+**What This Means**:
+- Free to redesign CLI interface for better UX
+- Can improve file formats (e.g., YAML for config)
+- Can modernize output formats
+- Can break existing scripts/workflows
+- Can change default behaviors
 
-2. **File Formats Unchanged**
-   - Device CSV format: Identical
-   - Command TXT format: Identical
-   - Output formats: Byte-for-byte identical
-   - Config JSON: Backward compatible
+**Recommended Approach**:
+- Keep CLI intuitive and familiar where it makes sense
+- Improve error messages and help text
+- Add better validation and feedback
+- Consider migration tooling if format changes significantly
 
-3. **Behavior Unchanged**
-   - Same error messages
-   - Same progress indicators
-   - Same logging format
-   - Same session logs
+### Version Bump
+This rewrite will be released as **v3.0.0** (major version bump) to signal breaking changes.
 
 ### For Developers/Contributors
 **Changes**: Import paths updated
@@ -375,64 +367,68 @@ from netmiko_collector.commands import load_commands
 
 ### High Risks 🔴
 
-1. **Breaking User Scripts**
-   - **Risk**: Users import functions directly
-   - **Likelihood**: LOW (primarily CLI tool)
-   - **Impact**: HIGH (user frustration)
-   - **Mitigation**: 
-     - Compatibility shims in `__init__.py`
-     - Deprecation warnings
-     - Clear migration guide
-     - Keep legacy file for one release
-
-2. **Regression Bugs**
-   - **Risk**: Behavior changes during refactoring
-   - **Likelihood**: MEDIUM (complex code)
+1. **Regression Bugs**
+   - **Risk**: Behavior changes during rewrite
+   - **Likelihood**: MEDIUM-HIGH (complete rewrite)
    - **Impact**: HIGH (production impact)
    - **Mitigation**:
-     - Increase test coverage to >50% first
-     - Add integration tests
-     - Gradual migration with continuous testing
-     - Beta testing period
+     - Build comprehensive test suite first (>80% coverage)
+     - Add integration tests with real scenarios
+     - Beta testing period with maintainer
+     - Extensive manual testing
 
-3. **Performance Degradation**
-   - **Risk**: Module imports add overhead
-   - **Likelihood**: LOW (imports are fast)
+2. **Performance Degradation**
+   - **Risk**: New architecture slower than original
+   - **Likelihood**: LOW (module imports are fast)
    - **Impact**: MEDIUM (user experience)
    - **Mitigation**:
      - Benchmark before/after
-     - Lazy imports where appropriate
      - Performance tests in CI
+     - Profile hot paths
+     - Optimize as needed
+
+3. **Incomplete Feature Parity**
+   - **Risk**: Missing functionality from original
+   - **Likelihood**: MEDIUM (easy to miss edge cases)
+   - **Impact**: HIGH (missing features)
+   - **Mitigation**:
+     - Comprehensive feature inventory
+     - Checklist of all CLI commands and options
+     - Test all output formats
+     - Review with maintainer
 
 ### Medium Risks 🟡
 
-4. **Incomplete Migration**
-   - **Risk**: Some functionality left behind
-   - **Likelihood**: LOW (careful planning)
-   - **Impact**: MEDIUM (technical debt)
-   - **Mitigation**:
-     - Checklist of all functions
-     - Code coverage tracking
-     - Comprehensive testing
-
-5. **Import Cycles**
-   - **Risk**: Circular dependencies created
+4. **Import Cycles**
+   - **Risk**: Circular dependencies in modules
    - **Likelihood**: MEDIUM (complex relationships)
    - **Impact**: MEDIUM (import errors)
    - **Mitigation**:
      - Careful dependency planning
      - Models as shared foundation
      - Dependency injection pattern
+     - Protocol-based interfaces
+
+5. **Over-Engineering**
+   - **Risk**: Too much abstraction, complexity
+   - **Likelihood**: MEDIUM (temptation with rewrite)
+   - **Impact**: MEDIUM (maintenance burden)
+   - **Mitigation**:
+     - Keep it simple (YAGNI principle)
+     - Favor composition over inheritance
+     - Pragmatic abstractions only
+     - Regular code review
 
 ### Low Risks 🟢
 
 6. **Documentation Lag**
    - **Risk**: Docs not updated in time
-   - **Likelihood**: LOW (planned in migration)
+   - **Likelihood**: LOW (planned in phases)
    - **Impact**: LOW (temporary confusion)
    - **Mitigation**:
      - Update docs alongside code
-     - Automated doc generation where possible
+     - Automated doc generation (sphinx)
+     - Examples in docstrings
 
 ---
 
@@ -483,94 +479,104 @@ tests/
 ## Success Criteria
 
 ### Must Have (Mandatory)
-- ✅ All existing tests pass
-- ✅ No CLI behavior changes
+- ✅ All core functionality working correctly
 - ✅ Test coverage >80%
 - ✅ All modules <500 lines
 - ✅ No circular dependencies
-- ✅ Documentation updated
-- ✅ Migration guide provided
+- ✅ Documentation complete
+- ✅ Zero regressions in core features
+- ✅ CLI intuitive and user-friendly
+- ✅ All output formats working
 
 ### Should Have (Important)
-- ✅ Performance within 10% of baseline
-- ✅ Type hints on all public functions
-- ✅ Docstrings on all modules
-- ✅ CI gates enforce coverage
-- ✅ Example usage in docs
+- ✅ Performance within 10% of baseline (or better)
+- ✅ Type hints on all public functions (mypy --strict)
+- ✅ Docstrings on all modules/functions
+- ✅ CI gates enforce coverage and quality
+- ✅ Comprehensive examples
+- ✅ Clear error messages
+- ✅ Modern Python best practices
 
 ### Nice to Have (Optional)
-- Async SSH option (future)
-- Plugin system for formatters (future)
-- API for programmatic use (future)
+- Plugin system for formatters (future - P2)
+- API for programmatic use (future - P2)
+- Async SSH option (future - P3)
+- Web dashboard integration (future - P3)
 
 ---
 
 ## Timeline & Resources
 
 ### Estimated Duration
-- **Total**: 10 weeks
-- **Phases**: 7 phases (preparation through cleanup)
+- **Total**: 8-10 weeks
+- **Phases**: 6 phases (foundation through QA)
 - **Effort**: ~50-60 story points
 
 ### Resource Requirements
-- **1 Senior Engineer**: Architecture, complex modules
-- **1 Mid-Level Engineer**: Formatters, utilities, tests
-- **Part-time QA**: Testing strategy, validation
+- **1 Senior Engineer**: Architecture design, core modules, SSH logic
+- **OR Focused Development**: Maintainer-driven rewrite
+- **Testing**: Comprehensive test suite development
 
 ### Milestones
-1. **Week 2**: Test coverage >50%, modules stubbed
-2. **Week 5**: Core logic extracted, tests passing
-3. **Week 8**: All modules extracted, integration working
-4. **Week 10**: Documentation complete, ready for release
+1. **Week 2**: Foundation complete, models and tests established
+2. **Week 4**: Core modules implemented with >50% coverage
+3. **Week 6**: Business logic complete, formatters working
+4. **Week 8**: CLI integrated, all features working
+5. **Week 10**: Testing complete (>80% coverage), docs finalized, v3.0.0 release
 
 ---
 
 ## Alternatives Considered
 
-### Alternative 1: Keep Monolithic, Add Classes
+### Alternative 1: Gradual Refactoring
+**Approach**: Extract modules from existing file over time
+
+**Decision**: Rejected - Maintainer approved complete rewrite for cleaner result
+
+### Alternative 2: Keep Monolithic, Add Classes
 **Approach**: Convert to OOP within single file
 
-**Decision**: Rejected - Doesn't address core issues (file size, navigation)
+**Decision**: Rejected - Doesn't address core issues (file size, structure)
 
-### Alternative 2: Microservices Architecture
+### Alternative 3: Microservices Architecture
 **Approach**: Split into separate services
 
 **Decision**: Rejected - Over-engineering for CLI tool
 
-### Alternative 3: Plugin Architecture First
+### Alternative 4: Plugin Architecture First
 **Approach**: Create plugin system, then modularize
 
-**Decision**: Deferred - Do basic modularization first, plugins later
+**Decision**: Deferred - Do basic modularization first, plugins later (P2)
 
 ---
 
 ## Open Questions
 
-1. **Q**: Should we maintain `netmiko_collector.py` as a facade?
-   **A**: Yes, for one release with deprecation warning
+1. **Q**: Should we use dataclasses or Pydantic models?
+   **A**: Start with dataclasses (stdlib), can upgrade to Pydantic if validation complexity increases
 
-2. **Q**: Can we break import compatibility?
-   **A**: No, maintain shims in `__init__.py` for one release
-
-3. **Q**: Should we use dataclasses or Pydantic models?
-   **A**: Start with dataclasses (stdlib), can upgrade to Pydantic later
-
-4. **Q**: Async SSH now or later?
+2. **Q**: Async SSH now or later?
    **A**: Later (PERF-002), focus on modular structure first
+
+3. **Q**: What about the version number?
+   **A**: Bump to v3.0.0 to signal major rewrite (currently at v2.0.0)
+
+4. **Q**: TypeScript/Go/Rust rewrite?
+   **A**: No, stay with Python (maintainer preference, ecosystem fit)
 
 ---
 
 ## Stakeholder Sign-Off
 
 ### Required Approvals
-- [ ] @lammesen (Repository Maintainer)
-- [ ] Architecture Review
-- [ ] Community Feedback (GitHub issue discussion)
+- [x] @lammesen (Repository Maintainer) - **APPROVED** (complete rework, no backward compatibility needed)
+- [ ] Architecture Review (this RFC)
 
-### Feedback Period
-- **Duration**: 1 week
-- **Discussion**: GitHub issue #TBD
-- **Deadline**: 2025-11-03
+### Decision Record
+- **Date**: 2025-10-27
+- **Decision**: Complete codebase rewrite approved
+- **Rationale**: Clean slate enables best practices without legacy constraints
+- **Version**: Will be v3.0.0 (major breaking release)
 
 ---
 
