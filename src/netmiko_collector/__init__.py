@@ -5,7 +5,7 @@ A modern, modular CLI application for batch network device management using SSH.
 Supports multiple vendors, parallel execution, and various output formats.
 """
 
-__version__ = "3.0.0"
+__version__ = "2.0.0"
 __author__ = "lammesen"
 __license__ = "MIT"
 
