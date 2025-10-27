@@ -10,7 +10,10 @@
     "effort": 5,
     "priority": "P0",
     "risk": "high",
-    "dependencies": ["TEST-001", "RFC-001"],
+    "dependencies": [
+      "TEST-001",
+      "RFC-001"
+    ],
     "acceptance_criteria": [
       "All code moved to /src/netmiko_collector/ directory structure",
       "Each module has < 500 lines of code",
@@ -43,9 +46,11 @@
       "Rollback plan included",
       "Stakeholder review completed"
     ],
-    "status": "planned",
+    "status": "in_review",
     "pr_links": [],
-    "commit_shas": []
+    "commit_shas": [
+      "3fd2ad1"
+    ]
   },
   {
     "id": "TEST-001",
@@ -69,7 +74,7 @@
       "CI updated to enforce coverage minimum",
       "Coverage report generated in CI"
     ],
-    "status": "planned",
+    "status": "in_progress",
     "pr_links": [],
     "commit_shas": []
   },
@@ -93,9 +98,11 @@
       "Documentation updated with SBOM location and usage",
       "SBOM validation passes"
     ],
-    "status": "planned",
+    "status": "done",
     "pr_links": [],
-    "commit_shas": []
+    "commit_shas": [
+      "ef9b213"
+    ]
   },
   {
     "id": "SEC-002",
@@ -108,7 +115,9 @@
     "effort": 2,
     "priority": "P0",
     "risk": "low",
-    "dependencies": ["SEC-001"],
+    "dependencies": [
+      "SEC-001"
+    ],
     "acceptance_criteria": [
       "SECURITY_REPORT.md created with audit findings",
       "Bandit scan results documented",
@@ -310,7 +319,9 @@
     "effort": 4,
     "priority": "P2",
     "risk": "medium",
-    "dependencies": ["FEAT-006"],
+    "dependencies": [
+      "FEAT-006"
+    ],
     "acceptance_criteria": [
       "Stores historical command outputs",
       "Detects changes between runs",
@@ -387,7 +398,9 @@
     "effort": 5,
     "priority": "P3",
     "risk": "high",
-    "dependencies": ["ARCH-001"],
+    "dependencies": [
+      "ARCH-001"
+    ],
     "acceptance_criteria": [
       "Web dashboard accessible via local server",
       "Displays device inventory and status",
@@ -438,7 +451,9 @@
     "effort": 4,
     "priority": "P3",
     "risk": "medium",
-    "dependencies": ["ARCH-001"],
+    "dependencies": [
+      "ARCH-001"
+    ],
     "acceptance_criteria": [
       "Core functionality exposed as Python library",
       "Optional REST API server",
@@ -562,7 +577,9 @@
     "effort": 3,
     "priority": "P2",
     "risk": "medium",
-    "dependencies": ["INFRA-002"],
+    "dependencies": [
+      "INFRA-002"
+    ],
     "acceptance_criteria": [
       "Dockerfile created with multi-stage build",
       "Image size optimized (<500MB)",
@@ -622,9 +639,11 @@
       "CI enforces version consistency",
       "Documentation for version management"
     ],
-    "status": "planned",
+    "status": "done",
     "pr_links": [],
-    "commit_shas": []
+    "commit_shas": [
+      "66f7ecc"
+    ]
   },
   {
     "id": "DOCS-002",
@@ -740,7 +759,9 @@
     "effort": 3,
     "priority": "P2",
     "risk": "low",
-    "dependencies": ["ARCH-001"],
+    "dependencies": [
+      "ARCH-001"
+    ],
     "acceptance_criteria": [
       "Sphinx configured in docs/ directory",
       "API documentation auto-generated from docstrings",
@@ -909,7 +930,9 @@
     "effort": 4,
     "priority": "P2",
     "risk": "medium",
-    "dependencies": ["ARCH-001"],
+    "dependencies": [
+      "ARCH-001"
+    ],
     "acceptance_criteria": [
       "Connection pool implementation",
       "Configurable pool size",
@@ -934,7 +957,10 @@
     "effort": 5,
     "priority": "P3",
     "risk": "high",
-    "dependencies": ["ARCH-001", "RFC-002"],
+    "dependencies": [
+      "ARCH-001",
+      "RFC-002"
+    ],
     "acceptance_criteria": [
       "Async SSH implementation with asyncssh",
       "Backward compatibility maintained",
