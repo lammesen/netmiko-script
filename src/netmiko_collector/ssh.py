@@ -146,7 +146,7 @@ class SSHConnection:
         if self.connection and self._connected:
             try:
                 self.connection.disconnect()
-            except Exception:
+            except Exception:  # nosec B110 - Best effort disconnect, failure is acceptable
                 pass  # Best effort disconnect
             finally:
                 self._connected = False

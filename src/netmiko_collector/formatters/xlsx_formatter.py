@@ -74,8 +74,8 @@ class XLSXFormatter(BaseFormatter):
                 try:
                     if len(str(cell.value)) > max_length:
                         max_length = len(str(cell.value))
-                except:
-                    pass
+                except (AttributeError, TypeError):
+                    pass  # Skip cells that can't be measured
             adjusted_width = min(max_length + 2, 50)  # Cap at 50
             ws.column_dimensions[column_letter].width = adjusted_width
         

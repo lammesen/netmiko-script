@@ -50,7 +50,7 @@ class DeviceType(Enum):
 class AuthMethod(Enum):
     """SSH authentication methods."""
 
-    PASSWORD = "password"
+    PASSWORD = "password"  # nosec B105 - This is an enum value, not a hardcoded password
     KEY = "key"
     AGENT = "agent"
 
