@@ -73,6 +73,7 @@ class ExecutionStatus(Enum):
     SUCCESS = "success"
     FAILED = "failed"
     TIMEOUT = "timeout"
+    AUTH_FAILED = "auth_failed"
     SKIPPED = "skipped"
 
 
@@ -216,6 +217,18 @@ class ExecutionResult:
     def hostname(self) -> str:
         """Get hostname from device."""
         return self.device.hostname
+    
+    @property
+    def outputs(self) -> dict:
+        """Get outputs dict (for compatibility)."""
+        if self.output:
+            return {self.command.command: self.output}
+        return {}
+    
+    @property
+    def error_message(self) -> str:
+        """Get error message (alias for error)."""
+        return self.error
 
     def to_dict(self) -> dict:
         """Convert result to dictionary for serialization."""
