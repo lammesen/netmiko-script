@@ -1,0 +1,125 @@
+# Configuration for GitHub Actions Labeler
+# See: https://github.com/actions/labeler
+
+# Documentation Changes
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'CHANGELOG.md'
+      - 'SECURITY.md'
+      - 'LICENSE'
+      - 'docs/**/*'
+      - '*.md'
+
+# Python Code Changes
+python:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.py'
+
+# Test Files
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'test_*.py'
+      - '**/test_*.py'
+      - 'tests/**/*'
+
+# CI/CD Workflows
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**/*'
+
+# GitHub Configuration
+github:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**/*'
+
+# Dependencies
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'setup.cfg'
+
+# Configuration Files
+configuration:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.toml'
+      - '*.cfg'
+      - '*.ini'
+      - '*.conf'
+      - 'Makefile'
+
+# Security Related
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'SECURITY.md'
+      - '.github/workflows/security.yml'
+      - '.github/workflows/bandit.yml'
+      - '.github/workflows/codeql.yml'
+      - '.github/workflows/dependency-review.yml'
+
+# Examples and Sample Files
+examples:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'devices*.csv'
+      - 'commands.txt'
+      - 'ssh_config_example.txt'
+      - '*_example.*'
+      - 'examples/**/*'
+
+# Code Quality and Formatting
+code-quality:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/pylint.yml'
+      - '.github/workflows/formatting.yml'
+      - '.github/workflows/pre-commit.yml'
+      - '.github/workflows/type-check.yml'
+      - '.pre-commit-config.yaml'
+
+# Release Related
+release:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/release.yml'
+      - 'CHANGELOG.md'
+  - base-branch:
+    - 'main'
+    - 'master'
+
+# Feature Branches
+feature:
+  - head-branch:
+    - '^feature/.*'
+    - '^feat/.*'
+
+# Bug Fix Branches
+bug:
+  - head-branch:
+    - '^fix/.*'
+    - '^bugfix/.*'
+    - '^hotfix/.*'
+
+# Refactoring
+refactor:
+  - head-branch:
+    - '^refactor/.*'
+
+# Chore/Maintenance
+chore:
+  - head-branch:
+    - '^chore/.*'
+    - '^maint/.*'
+    - '^maintenance/.*'
