@@ -18,7 +18,6 @@ python:
   - changed-files:
     - any-glob-to-any-file:
       - '**/*.py'
-      - '*.py'
 
 # Test Files
 tests:
