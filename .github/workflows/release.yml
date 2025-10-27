@@ -121,7 +121,7 @@ jobs:
           ## What's Included
 
           - **Executable Size:** ${{ steps.fileinfo.outputs.size }} MB
-          - **Python Version:** $(python --version)
+          - **Python Version:** $(python --version 2>&1)
           - **Build Date:** $(Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC")
           - **Commit:** ${{ github.sha }}
 
