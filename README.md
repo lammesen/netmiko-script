@@ -219,12 +219,15 @@ For information on reporting security vulnerabilities, see [SECURITY.md](SECURIT
 - ✅ Secure password handling with getpass()
 
 **Automated Security Scans:**
-- Bandit (Python security) - every push/PR + weekly
-- CodeQL (semantic analysis) - weekly
-- pip-audit (dependencies) - every push/PR + weekly
-- Dependency Review - every PR
+- [Bandit](.github/workflows/bandit.yml) (Python security) - every push/PR + weekly
+- [CodeQL](.github/workflows/codeql.yml) (semantic analysis) - weekly
+- [pip-audit](.github/workflows/security.yml) (dependencies) - every push/PR + weekly
+- [Dependency Review](.github/workflows/dependency-review.yml) - every PR
 
 ### Security Best Practices
+
+> 💡 **Quick Reference**: Key security practices are summarized below.
+> For complete security documentation, see [SECURITY.md](SECURITY.md).
 
 **Credential Management:**
 
@@ -246,8 +249,12 @@ DON'T:
 
 **File Security:**
 - Store device/command CSV files outside version control
-- Use restrictive file permissions: `chmod 600` on sensitive files
-- Keep SSH private keys in `~/.ssh/` directory
+- Use restrictive file permissions on sensitive files:
+  - **Unix/Linux/macOS:** `chmod 600 sensitive_file.csv`
+  - **Windows:** Right-click → Properties → Security → Edit (remove unnecessary users)
+- Keep SSH private keys in `~/.ssh/` directory with proper permissions:
+  - **Unix/Linux/macOS:** `chmod 600 ~/.ssh/id_rsa`
+  - **Windows:** Managed automatically in `%USERPROFILE%\.ssh\`
 - Review and validate command files before execution
 - Use encrypted storage for sensitive device inventories
 

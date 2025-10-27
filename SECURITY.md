@@ -6,9 +6,9 @@ We release security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 3.x.x   | :white_check_mark: |
-| 2.x.x   | :white_check_mark: |
-| < 2.0   | :x:                |
+| 2.0.x   | :white_check_mark: (Current) |
+| 1.x.x   | :white_check_mark: (Security updates only) |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
 

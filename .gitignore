@@ -114,3 +114,25 @@ devices_production*.csv
 *~
 *.tmp
 *.temp
+
+# Cloud provider credentials
+.aws/credentials
+.aws/config
+.gcp/credentials.json
+.azure/credentials
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Vault and secrets management
+.vault-token
+vault-token
+*.vault
+
+# Database dumps (may contain sensitive data)
+*.sql
+*.dump
+*.db
+*.sqlite
+*.sqlite3
