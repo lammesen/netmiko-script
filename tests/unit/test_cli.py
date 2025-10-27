@@ -5,9 +5,9 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from typer.testing import CliRunner
 
-from netmiko_collector.cli import app
-from netmiko_collector.models import Device, Command, ExecutionResult, ExecutionStatus
-from netmiko_collector.executor import ExecutionStats
+from src.netmiko_collector.cli import app
+from src.netmiko_collector.models import Device, Command, ExecutionResult, ExecutionStatus
+from src.netmiko_collector.executor import ExecutionStats
 
 
 runner = CliRunner()
