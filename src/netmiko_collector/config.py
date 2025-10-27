@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from src.netmiko_collector.models import AuthMethod
-from src.netmiko_collector.utils import expand_path
+from netmiko_collector.models import AuthMethod
+from netmiko_collector.utils import expand_path
 
 
 @dataclass

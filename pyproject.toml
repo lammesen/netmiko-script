@@ -31,6 +31,8 @@ classifiers = [
 dependencies = [
     "netmiko>=4.3.0",
     "paramiko>=3.4.0",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
@@ -47,7 +49,7 @@ dev = [
 ]
 
 [project.scripts]
-netmiko-collector = "netmiko_collector:main"
+netmiko-collector = "netmiko_collector.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/lammesen/netmiko-script"
