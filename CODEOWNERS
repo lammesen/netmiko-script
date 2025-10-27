@@ -1,0 +1,38 @@
+# Code Owners for netmiko-script
+
+# Global owners (all files unless overridden)
+* @lammesen
+
+# Documentation
+/docs/ @lammesen
+*.md @lammesen
+
+# CI/CD and Infrastructure
+/.github/ @lammesen
+/scripts/ @lammesen
+/infra/ @lammesen
+.devcontainer/ @lammesen
+Dockerfile @lammesen
+docker-compose*.yml @lammesen
+
+# Configuration Files
+pyproject.toml @lammesen
+requirements*.txt @lammesen
+Makefile @lammesen
+.pre-commit-config.yaml @lammesen
+
+# Core Application (when modularized)
+/src/netmiko_collector/ @lammesen
+
+# Tests
+/tests/ @lammesen
+test_*.py @lammesen
+
+# Examples
+/examples/ @lammesen
+
+# Security-sensitive files
+SECURITY.md @lammesen
+.github/workflows/security.yml @lammesen
+.github/workflows/codeql.yml @lammesen
+.github/workflows/bandit.yml @lammesen
