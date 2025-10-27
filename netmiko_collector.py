@@ -8,7 +8,7 @@ executes a list of commands on each device, and saves the output to a CSV file.
 
 Author: Network Automation
 Date: 2025-10-24
-Version: 3.0.0
+Version: 2.0.0
 """
 
 import csv

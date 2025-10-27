@@ -358,4 +358,4 @@ For issues or questions:
 
 ---
 
-**Version:** 4.0.0 | **Powered by:** Netmiko, Typer, Rich
+**Version:** 2.0.0 | **Powered by:** Netmiko, Typer, Rich
