@@ -317,7 +317,7 @@ See [DEPENDENCIES.md](./DEPENDENCIES.md) for detailed dependency analysis.
 ## Build & Run Instructions
 
 ### Prerequisites
-- Python 3.7 or higher
+- Python 3.11 or higher
 - pip (Python package manager)
 - Git
 - SSH access to target devices

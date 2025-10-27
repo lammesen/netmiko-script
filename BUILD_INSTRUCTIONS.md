@@ -11,7 +11,7 @@ The build process creates:
 ## Prerequisites
 
 ### Required
-- Python 3.7+ installed
+- Python 3.11+ installed
 - PyInstaller (installed automatically by build script)
 
 ### Optional (for installer creation)
