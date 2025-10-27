@@ -60,8 +60,6 @@ configuration:
       - '*.cfg'
       - '*.ini'
       - '*.conf'
-      - '.pre-commit-config.yaml'
-      - 'pyproject.toml'
       - 'Makefile'
 
 # Security Related
