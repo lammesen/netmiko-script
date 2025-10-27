@@ -1,0 +1,62 @@
+name: Generate SBOM
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+      - 'pyproject.toml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+      - 'pyproject.toml'
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Monday at 10:00 UTC
+    - cron: '0 10 * * 1'
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Syft
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+    
+    - name: Generate SPDX SBOM
+      run: |
+        syft scan dir:. -o spdx-json=docs/sbom.spdx.json
+    
+    - name: Generate CycloneDX SBOM
+      run: |
+        syft scan dir:. -o cyclonedx-json=docs/sbom.cyclonedx.json
+    
+    - name: Upload SPDX SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-spdx
+        path: docs/sbom.spdx.json
+    
+    - name: Upload CycloneDX SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-cyclonedx
+        path: docs/sbom.cyclonedx.json
+    
+    - name: Commit SBOM updates
+      if: github.event_name != 'pull_request'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add docs/sbom.*.json
+        git diff --staged --quiet || git commit -m "chore: Update SBOM (automated)"
+        git push
