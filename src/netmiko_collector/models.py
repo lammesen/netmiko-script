@@ -88,6 +88,7 @@ class Device:
         password: SSH password (optional, can prompt or use key)
         port: SSH port (default: 22)
         auth_method: Authentication method (password, key, agent)
+        ssh_key_file: Path to SSH private key file (optional)
         proxy_jump: SSH proxy/jump server (optional)
         ssh_config: Path to SSH config file (optional)
         tags: Device tags for filtering/grouping
@@ -100,6 +101,7 @@ class Device:
     password: Optional[str] = None
     port: int = 22
     auth_method: AuthMethod = AuthMethod.PASSWORD
+    ssh_key_file: Optional[str] = None
     proxy_jump: Optional[str] = None
     ssh_config: Optional[str] = None
     tags: frozenset[str] = field(default_factory=frozenset)
@@ -120,6 +122,11 @@ class Device:
     @property
     def ip(self) -> str:
         """Get IP address (alias for hostname for backward compatibility)."""
+        return self.hostname
+    
+    @property
+    def host(self) -> str:
+        """Get host (alias for hostname for backward compatibility)."""
         return self.hostname
 
     def has_tag(self, tag: str) -> bool:
