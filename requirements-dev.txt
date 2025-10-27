@@ -20,7 +20,7 @@ mypy>=0.990
 bandit>=1.7.0
 pip-audit>=2.2.0
 safety>=2.3.0
-pysentry>=0.3.12
+pysentry-rs>=0.3.7
 
 # Pre-commit hooks
 pre-commit>=2.20.0

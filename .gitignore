@@ -62,3 +62,77 @@ coverage.xml
 *.spec
 bandit-report.json
 safety-report.json
+pip-audit-report.json
+
+# Credentials and secrets (never commit these!)
+.env
+.env.*
+*.env
+credentials.json
+*_credentials.*
+*credentials*
+secrets.json
+*_secrets.*
+*secrets*
+config.json
+*_config.json
+
+# SSH keys and certificates
+*.pem
+*.key
+*.ppk
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.pub
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# API tokens and auth
+.token
+*.token
+auth.json
+*.auth
+
+# Password files
+passwords.txt
+*.password
+*_password.*
+
+# Device inventory files with sensitive data
+devices_prod*.csv
+devices_production*.csv
+*_private.csv
+*_confidential.csv
+
+# Backup files that might contain secrets
+*.bak
+*.backup
+*~
+*.tmp
+*.temp
+
+# Cloud provider credentials
+.aws/credentials
+.aws/config
+.gcp/credentials.json
+.azure/credentials
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Vault and secrets management
+.vault-token
+vault-token
+*.vault
+
+# Database dumps (may contain sensitive data)
+*.sql
+*.dump
+*.db
+*.sqlite
+*.sqlite3

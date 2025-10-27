@@ -2,7 +2,21 @@
   "permissions": {
     "allow": [
       "Bash(git rm:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh api:*)",
+      "Bash(gh pr view:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(git fetch:*)",
+      "Bash(pip-audit:*)",
+      "Bash(git branch:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(pip search:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
