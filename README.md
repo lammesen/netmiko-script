@@ -184,9 +184,9 @@ Results include:
 For information on reporting security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 **Supported Versions:**
-- 3.x.x ✅ (Current - Full support)
-- 2.x.x ✅ (Security updates)
-- < 2.0 ❌ (Not supported)
+- 2.0.x ✅ (Current - Full support)
+- 1.x.x ✅ (Security updates)
+- < 1.0 ❌ (Not supported)
 
 ### Built-in Security Features
 
