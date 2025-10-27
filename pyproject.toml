@@ -56,21 +56,23 @@ Issues = "https://github.com/lammesen/netmiko-script/issues"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --cov=netmiko_collector --cov-report=term-missing --cov-report=html"
+addopts = "-ra -q --strict-markers --cov=netmiko_collector --cov=src --cov-report=term-missing --cov-report=html"
 testpaths = [
+    "tests",
     ".",
 ]
-python_files = ["test_netmiko_collector.py"]
+python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src", "."]
 omit = [
     "test_*.py",
     "setup.py",
     "*/tests/*",
     "*/__pycache__/*",
+    "*/site-packages/*",
 ]
 
 [tool.coverage.report]
