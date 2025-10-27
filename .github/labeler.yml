@@ -32,8 +32,6 @@ ci:
   - changed-files:
     - any-glob-to-any-file:
       - '.github/workflows/**/*'
-      - '.github/workflows/*.yml'
-      - '.github/workflows/*.yaml'
 
 # GitHub Configuration
 github:
