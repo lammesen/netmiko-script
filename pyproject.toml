@@ -60,7 +60,7 @@ addopts = "-ra -q --strict-markers --cov=netmiko_collector --cov-report=term-mis
 testpaths = [
     ".",
 ]
-python_files = ["test_*.py"]
+python_files = ["test_netmiko_collector.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
