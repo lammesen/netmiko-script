@@ -5,10 +5,9 @@ on:
     types: [opened, synchronize]
     # Optional: Only run on specific file changes
     # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    #   - "**/*.py"
+    #   - "requirements*.txt"
+    #   - "pyproject.toml"
 
 jobs:
   claude-review:

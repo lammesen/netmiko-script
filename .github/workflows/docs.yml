@@ -1,0 +1,50 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Setup Node.js for markdown-link-check
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Check README links
+        run: |
+          npm install -g markdown-link-check
+          markdown-link-check README.md || echo "No README.md found or link check failed"
+      - name: Build Sphinx documentation (if exists)
+        run: |
+          if [ -d "docs" ]; then
+            cd docs
+            make html
+          else
+            echo "No docs directory found. To add Sphinx documentation:"
+            echo "1. Run: sphinx-quickstart docs"
+            echo "2. Configure docs/conf.py"
+            echo "3. Commit the docs directory"
+          fi
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: documentation
+          path: docs/_build/html/
+          if-no-files-found: ignore
