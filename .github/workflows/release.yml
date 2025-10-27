@@ -133,7 +133,7 @@ jobs:
           3. Optional: Add to PATH for system-wide access
 
           ### Usage Examples
-          ``````batch
+          ```batch
           # View help
           netmiko-collector.exe --help
 
@@ -142,7 +142,7 @@ jobs:
 
           # Multiple output formats
           netmiko-collector.exe -d devices.csv -c commands.txt -f json html xlsx
-          ``````
+          ```
 
           ## System Requirements
           - Windows 7/8/10/11 (64-bit)
@@ -150,17 +150,17 @@ jobs:
           - No dependencies to install
 
           ## Alternative: Install via pip
-          ``````bash
+          ```bash
           pip install netmiko-collector
-          ``````
+          ```
 
           Or from source:
-          ``````bash
+          ```bash
           git clone https://github.com/lammesen/netmiko-script.git
           cd netmiko-script
           pip install -r requirements.txt
           pip install -e .
-          ``````
+          ```
 
           ## Documentation
           - [README](https://github.com/lammesen/netmiko-script#readme)

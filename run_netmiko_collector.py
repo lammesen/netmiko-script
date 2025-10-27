@@ -10,7 +10,7 @@ import os
 # Add the source directory to Python path for proper imports
 if getattr(sys, 'frozen', False):
     # Running as compiled executable
-    bundle_dir = sys._MEIPASS
+    bundle_dir = getattr(sys, '_MEIPASS', None)
 else:
     # Running as normal Python script
     bundle_dir = os.path.dirname(os.path.abspath(__file__))
