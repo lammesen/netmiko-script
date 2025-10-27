@@ -54,6 +54,16 @@ class AuthMethod(Enum):
     KEY = "key"
     AGENT = "agent"
 
+    @classmethod
+    def from_string(cls, value: str) -> "AuthMethod":
+        """Convert string to AuthMethod."""
+        normalized = value.lower().strip()
+        for method in cls:
+            if method.value == normalized:
+                return method
+        # Default to PASSWORD if no match
+        return cls.PASSWORD
+
 
 class ExecutionStatus(Enum):
     """Status of command execution."""
@@ -77,6 +87,7 @@ class Device:
         username: SSH username (optional, can use global default)
         password: SSH password (optional, can prompt or use key)
         port: SSH port (default: 22)
+        auth_method: Authentication method (password, key, agent)
         proxy_jump: SSH proxy/jump server (optional)
         ssh_config: Path to SSH config file (optional)
         tags: Device tags for filtering/grouping
@@ -84,10 +95,11 @@ class Device:
     """
 
     hostname: str
-    device_type: DeviceType
+    device_type: DeviceType = DeviceType.CISCO_IOS
     username: Optional[str] = None
     password: Optional[str] = None
     port: int = 22
+    auth_method: AuthMethod = AuthMethod.PASSWORD
     proxy_jump: Optional[str] = None
     ssh_config: Optional[str] = None
     tags: frozenset[str] = field(default_factory=frozenset)
@@ -104,6 +116,11 @@ class Device:
     def display_name(self) -> str:
         """Get a human-friendly display name for the device."""
         return f"{self.hostname}:{self.port}" if self.port != 22 else self.hostname
+    
+    @property
+    def ip(self) -> str:
+        """Get IP address (alias for hostname for backward compatibility)."""
+        return self.hostname
 
     def has_tag(self, tag: str) -> bool:
         """Check if device has a specific tag."""
@@ -117,6 +134,7 @@ class Command:
 
     Attributes:
         command: The command string to execute
+        command_string: Alias for command (for backward compatibility)
         description: Human-readable description (optional)
         timeout: Command timeout in seconds (default: 60)
         requires_enable: Whether command requires enable mode
@@ -140,6 +158,11 @@ class Command:
     def display_name(self) -> str:
         """Get a human-friendly display name for the command."""
         return self.description if self.description else self.command
+    
+    @property
+    def command_string(self) -> str:
+        """Get command string (alias for backward compatibility)."""
+        return self.command
 
 
 @dataclass
