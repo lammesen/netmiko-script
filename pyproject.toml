@@ -49,7 +49,7 @@ dev = [
 ]
 
 [project.scripts]
-netmiko-collector = "netmiko_collector.cli:app"
+netmiko-collector = "src.netmiko_collector.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/lammesen/netmiko-script"
