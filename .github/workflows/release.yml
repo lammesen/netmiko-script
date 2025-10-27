@@ -1,34 +1,241 @@
-name: Release
+name: Build and Release
 
 on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 2.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
 
 jobs:
-  release:
+  # Determine if we should build
+  check-trigger:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Check if should build
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/v') }}" == "true" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Tag push detected - building release"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Manual workflow dispatch - building release"
+          elif [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            PR_LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            if echo "$PR_LABELS" | grep -qi "release" || echo "$PR_TITLE" | grep -qi "release"; then
+              echo "should_build=true" >> $GITHUB_OUTPUT
+              echo "PR with release indicator merged - building release"
+            else
+              echo "should_build=false" >> $GITHUB_OUTPUT
+              echo "PR does not indicate release - skipping"
+            fi
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "No trigger condition met - skipping"
+          fi
+
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/v') }}" == "true" ]]; then
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"  # Remove 'v' prefix
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+  # Build Windows executable
+  build-windows:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_build == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Build executable with PyInstaller
+        run: python -m PyInstaller netmiko-collector.spec --clean
+
+      - name: Verify executable
+        run: |
+          dist\netmiko-collector.exe --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Executable test failed"
+            exit 1
+          }
+
+      - name: Get file info
+        id: fileinfo
+        run: |
+          $size = (Get-Item dist\netmiko-collector.exe).Length / 1MB
+          echo "size=$([math]::Round($size, 2))" >> $env:GITHUB_OUTPUT
+
+      - name: Create build info
+        run: |
+          @"
+          # netmiko-collector v${{ needs.check-trigger.outputs.version }}
+
+          Windows standalone executable - no Python installation required.
+
+          ## What's Included
+
+          - **Executable Size:** ${{ steps.fileinfo.outputs.size }} MB
+          - **Python Version:** $(python --version)
+          - **Build Date:** $(Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC")
+          - **Commit:** ${{ github.sha }}
+
+          ## Quick Start
+
+          ### Download and Run
+          1. Download ``netmiko-collector.exe``
+          2. No installation needed - run directly!
+          3. Optional: Add to PATH for system-wide access
+
+          ### Usage Examples
+          ``````batch
+          # View help
+          netmiko-collector.exe --help
+
+          # Collect from devices
+          netmiko-collector.exe -d devices.csv -c commands.txt
+
+          # Multiple output formats
+          netmiko-collector.exe -d devices.csv -c commands.txt -f json html xlsx
+          ``````
+
+          ## System Requirements
+          - Windows 7/8/10/11 (64-bit)
+          - No Python required
+          - No dependencies to install
+
+          ## Alternative: Install via pip
+          ``````bash
+          pip install netmiko-collector
+          ``````
+
+          Or from source:
+          ``````bash
+          git clone https://github.com/lammesen/netmiko-script.git
+          cd netmiko-script
+          pip install -r requirements.txt
+          pip install -e .
+          ``````
+
+          ## Documentation
+          - [README](https://github.com/lammesen/netmiko-script#readme)
+          - [Build Instructions](https://github.com/lammesen/netmiko-script/blob/main/BUILD_INSTRUCTIONS.md)
+          "@ | Out-File -FilePath build-info.md -Encoding UTF8
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: netmiko-collector-windows-exe
+          path: |
+            dist/netmiko-collector.exe
+            build-info.md
+          retention-days: 90
+
+  # Create or update release
+  create-release:
+    needs: [check-trigger, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: netmiko-collector-windows-exe
+          path: ./release-assets
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          VERSION="${{ needs.check-trigger.outputs.version }}"
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.check-trigger.outputs.version }}
+          name: Release v${{ needs.check-trigger.outputs.version }}
+          body_path: ./release-assets/build-info.md
+          files: |
+            ./release-assets/netmiko-collector.exe
+          draft: false
+          prerelease: false
           generate_release_notes: true
-          body: |
-            ## Installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            ```bash
-            pip install netmiko-collector
-            ```
+      - name: Update existing release
+        if: steps.check_release.outputs.exists == 'true'
+        run: |
+          VERSION="${{ needs.check-trigger.outputs.version }}"
+          gh release upload "v$VERSION" ./release-assets/netmiko-collector.exe --clobber
+          echo "Updated release v$VERSION with new executable"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
-            Or install from source:
-
-            ```bash
-            git clone https://github.com/lammesen/netmiko-script.git
-            cd netmiko-script
-            pip install -r requirements.txt
-            ```
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.check-trigger.outputs.version }}';
+            const releaseUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/v${version}`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🎉 **Release v${version} Created!**\n\n✅ Windows executable built and uploaded\n📦 Download: [netmiko-collector.exe](${releaseUrl})\n🔗 [View Full Release](${releaseUrl})\n\n**No Python required** - just download and run!`
+            })
