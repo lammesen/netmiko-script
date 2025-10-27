@@ -170,6 +170,11 @@ class Command:
     def command_string(self) -> str:
         """Get command string (alias for backward compatibility)."""
         return self.command
+    
+    @property
+    def text(self) -> str:
+        """Get command text (alias for command)."""
+        return self.command
 
 
 @dataclass
@@ -206,6 +211,11 @@ class ExecutionResult:
     def is_failure(self) -> bool:
         """Check if execution failed."""
         return self.status in (ExecutionStatus.FAILED, ExecutionStatus.TIMEOUT)
+    
+    @property
+    def hostname(self) -> str:
+        """Get hostname from device."""
+        return self.device.hostname
 
     def to_dict(self) -> dict:
         """Convert result to dictionary for serialization."""
