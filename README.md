@@ -177,13 +177,136 @@ Results include:
 - Application log: `netmiko_collector.log`
 - Session logs: `session_<hostname>_<timestamp>.log` (if enabled)
 
-## Security Best Practices
+## Security
 
-- Never commit credentials to version control
-- Use interactive password prompts (default)
-- Restrict file permissions on configs
-- Use SSH keys where possible
-- Review session logs before sharing
+### Security Policy
+
+For information on reporting security vulnerabilities, see [SECURITY.md](SECURITY.md).
+
+**Supported Versions:**
+- 3.x.x ✅ (Current - Full support)
+- 2.x.x ✅ (Security updates)
+- < 2.0 ❌ (Not supported)
+
+### Built-in Security Features
+
+**Authentication & Authorization:**
+- ✅ SSH key authentication with validation
+- ✅ Interactive password prompts (no CLI password arguments)
+- ✅ Enable mode password handling
+- ✅ SSH config file support with path validation
+- ✅ No hardcoded credentials anywhere in codebase
+
+**Network Security:**
+- ✅ Connection timeouts (configurable, default 30s)
+- ✅ Command timeouts (configurable, default 60s)
+- ✅ Retry logic with exponential backoff
+- ✅ Thread pool limits (1-20 workers) to prevent resource exhaustion
+- ✅ No insecure fallbacks or deprecated algorithms
+
+**Code Security:**
+- ✅ Pre-commit hooks with security scanning
+- ✅ Bandit security linter in CI/CD
+- ✅ CodeQL static analysis (weekly)
+- ✅ pip-audit dependency scanning
+- ✅ Input validation on all user inputs
+- ✅ No eval(), exec(), or dangerous functions
+
+**Secrets Protection:**
+- ✅ Pre-commit hook detects private keys
+- ✅ Comprehensive .gitignore for credentials
+- ✅ No credential logging
+- ✅ Secure password handling with getpass()
+
+**Automated Security Scans:**
+- Bandit (Python security) - every push/PR + weekly
+- CodeQL (semantic analysis) - weekly
+- pip-audit (dependencies) - every push/PR + weekly
+- Dependency Review - every PR
+
+### Security Best Practices
+
+**Credential Management:**
+
+DO:
+- ✅ Use SSH key authentication when possible
+- ✅ Use interactive password prompts (default behavior)
+- ✅ Store SSH keys with 600 permissions (`chmod 600 ~/.ssh/id_rsa`)
+- ✅ Use SSH key passphrases for additional security
+- ✅ Rotate credentials regularly
+- ✅ Use strong, unique passwords per device
+- ✅ Consider credential management systems (Vault, AWS Secrets Manager)
+
+DON'T:
+- ❌ Never commit credentials to version control
+- ❌ Never use password CLI arguments (removed for security)
+- ❌ Never share credentials via email or insecure channels
+- ❌ Never store passwords in plain text files
+- ❌ Never commit device inventory files with production IPs/credentials
+
+**File Security:**
+- Store device/command CSV files outside version control
+- Use restrictive file permissions: `chmod 600` on sensitive files
+- Keep SSH private keys in `~/.ssh/` directory
+- Review and validate command files before execution
+- Use encrypted storage for sensitive device inventories
+
+**Network Security:**
+- Use jump hosts/bastion servers for production environments
+- Implement network segmentation
+- Use SSH config files for complex topologies
+- Limit concurrent connections (`--max-workers`) appropriately
+- Enable session logging only when required for compliance
+
+**Dependency Security:**
+```bash
+# Check for vulnerabilities
+pip-audit
+
+# Update dependencies safely
+pip install --upgrade -r requirements.txt
+
+# Run all security checks
+pre-commit run --all-files
+```
+
+### Security Considerations
+
+**Command Execution Risk:**
+- Commands are read from text files - treat command files as trusted sources
+- Implement file integrity monitoring for command files in production
+- Review command files before execution
+- All commands execute with timeout protection
+- No automatic privilege escalation (enable mode must be explicit)
+
+**File Path Security:**
+- Validate file permissions before use
+- Use absolute paths when possible
+- Store sensitive files in secure locations with proper ACLs
+
+### Enterprise/Compliance
+
+For regulated environments (HIPAA, PCI-DSS, SOC 2):
+
+**Audit Logging:**
+- Enable session logging when required
+- Store logs in centralized, secure location
+- Implement log retention policies
+- Monitor logs for suspicious activity
+
+**Access Control:**
+- Implement role-based access control
+- Use privileged access management (PAM) solutions
+- Document and follow access procedures
+- Restrict credential storage access
+
+**Data Protection:**
+- Command outputs may contain sensitive configurations
+- Encrypt output files at rest
+- Use secure file transfer methods
+- Follow data classification policies
+
+See [SECURITY.md](SECURITY.md) for comprehensive security information.
 
 ## Documentation
 

@@ -145,4 +145,13 @@ ignore_missing_imports = true
 
 [tool.bandit]
 exclude_dirs = ["/test_*.py", "tests/"]
+# B101: assert_used - acceptable in test files (excluded via exclude_dirs)
+# B601: paramiko_calls - paramiko is the core SSH library used by netmiko
+#       All paramiko usage is through netmiko's ConnectHandler abstraction
+#       which provides secure defaults and is industry-standard for network automation
+#       Netmiko handles SSH security best practices including:
+#       - Key-based authentication with validation
+#       - Proper timeout handling
+#       - Secure credential handling (never logged)
+#       - No insecure fallbacks or deprecated algorithms
 skips = ["B101", "B601"]
