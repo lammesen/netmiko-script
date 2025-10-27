@@ -8,8 +8,8 @@ import csv
 from pathlib import Path
 from typing import List, Optional
 
-from src.netmiko_collector.models import AuthMethod, Device, DeviceType
-from src.netmiko_collector.utils import validate_hostname, validate_port
+from .models import AuthMethod, Device, DeviceType
+from .utils import validate_hostname, validate_port
 
 
 def load_devices_from_csv(
