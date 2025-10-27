@@ -334,5 +334,5 @@ For issues with the release process:
 
 ---
 
-**Last Updated:** $(Get-Date -Format "yyyy-MM-dd")
+**Last Updated:** 2025-10-27
 **Workflow Version:** 2.0

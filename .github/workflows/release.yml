@@ -35,7 +35,7 @@ jobs:
       - name: Check if should build
         id: check
         run: |
-          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/v') }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" == "push" ]] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
             echo "Tag push detected - building release"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
@@ -59,7 +59,7 @@ jobs:
       - name: Get version
         id: version
         run: |
-          if [[ "${{ github.event_name }}" == "push" && "${{ startsWith(github.ref, 'refs/tags/v') }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" == "push" ]] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION="${{ github.ref_name }}"
             VERSION="${VERSION#v}"  # Remove 'v' prefix
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
