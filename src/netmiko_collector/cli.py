@@ -17,13 +17,13 @@ except ImportError as e:
     print("Please install with: pip install typer rich")
     sys.exit(1)
 
-from netmiko_collector import __version__
-from netmiko_collector.config import Config
-from netmiko_collector.devices import load_devices_from_csv
-from netmiko_collector.commands import load_commands_from_file
-from netmiko_collector.executor import execute_on_devices
-from netmiko_collector.formatters import get_formatter
-from netmiko_collector.ui import (
+from . import __version__
+from .config import Config
+from .devices import load_devices_from_csv
+from .commands import load_commands_from_file
+from .executor import execute_on_devices
+from .formatters import get_formatter
+from .ui import (
     create_progress_bar,
     create_device_summary,
     print_error,
