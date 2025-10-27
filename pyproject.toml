@@ -7,7 +7,7 @@ name = "netmiko-collector"
 version = "2.0.0"
 description = "Production-ready Python script for collecting command outputs from network devices using Netmiko"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Network Automation Team"}
@@ -19,11 +19,8 @@ classifiers = [
     "Intended Audience :: Telecommunications Industry",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: System :: Networking",
     "Topic :: System :: Systems Administration",
 ]
@@ -49,7 +46,7 @@ dev = [
 ]
 
 [project.scripts]
-netmiko-collector = "src.netmiko_collector.cli:app"
+netmiko-collector = "netmiko_collector.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/lammesen/netmiko-script"
@@ -91,7 +88,7 @@ exclude_lines = [
 
 [tool.black]
 line-length = 100
-target-version = ['py37', 'py38', 'py39', 'py310', 'py311']
+target-version = ['py311', 'py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -127,7 +124,7 @@ disable = [
 good-names = ["i", "j", "k", "ex", "f", "e", "_"]
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

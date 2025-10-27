@@ -2,7 +2,7 @@
 
 ## Document Information
 - **Last Updated**: 2025-10-27
-- **Python Version**: 3.7+
+- **Python Version**: 3.11+
 - **Package Manager**: pip
 - **Lock Files**: None (using minimum version constraints)
 

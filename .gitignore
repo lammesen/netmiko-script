@@ -59,10 +59,16 @@ coverage.xml
 .tox/
 
 # Build artifacts
-*.spec
 bandit-report.json
 safety-report.json
 pip-audit-report.json
+
+# PyInstaller build files
+build/
+dist/
+*.exe
+*.spec.bak
+installer_output/
 
 # Credentials and secrets (never commit these!)
 .env

@@ -15,7 +15,7 @@ A production-ready Python CLI tool for collecting command outputs from network d
 
 ## Requirements
 
-- Python 3.7+
+- Python 3.11+
 - Netmiko (network automation)
 - Typer (CLI framework)
 - Rich (terminal formatting - recommended)
