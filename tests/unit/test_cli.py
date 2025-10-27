@@ -94,10 +94,10 @@ class TestCLI:
         result = runner.invoke(app, [])
         assert result.exit_code != 0
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
-    @patch("netmiko_collector.cli.get_formatter")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.get_formatter")
     def test_successful_execution(
         self,
         mock_get_formatter,
@@ -118,13 +118,13 @@ class TestCLI:
         mock_load_devices.return_value = mock_devices
         mock_load_commands.return_value = mock_commands
         
-        stats = ExecutionStats(
-            total=2,
-            completed=2,
-            successful=2,
-            failed=0,
-            duration=2.8,
-        )
+        stats = ExecutionStats()
+        stats.total_devices = 2
+        stats.completed_devices = 2
+        stats.successful_devices = 2
+        stats.failed_devices = 0
+        stats.start_time = 0.0
+        stats.end_time = 2.8
         mock_execute.return_value = stats
         
         mock_formatter = Mock()
@@ -148,10 +148,10 @@ class TestCLI:
         assert mock_execute.called
         assert output_file.exists()
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
-    @patch("netmiko_collector.cli.get_formatter")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.get_formatter")
     def test_execution_with_failures(
         self,
         mock_get_formatter,
@@ -219,10 +219,10 @@ class TestCLI:
         )
         assert result.exit_code != 0
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
-    @patch("netmiko_collector.cli.get_formatter")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.get_formatter")
     def test_custom_output_format(
         self,
         mock_get_formatter,
@@ -242,13 +242,13 @@ class TestCLI:
         mock_load_devices.return_value = mock_devices
         mock_load_commands.return_value = mock_commands
         
-        stats = ExecutionStats(
-            total=2,
-            completed=2,
-            successful=2,
-            failed=0,
-            duration=2.8,
-        )
+        stats = ExecutionStats()
+        stats.total_devices = 2
+        stats.completed_devices = 2
+        stats.successful_devices = 2
+        stats.failed_devices = 0
+        stats.start_time = 0.0
+        stats.end_time = 2.8
         mock_execute.return_value = stats
         
         mock_formatter = Mock()
@@ -269,10 +269,10 @@ class TestCLI:
         assert result.exit_code == 0
         assert mock_get_formatter.called_with("json")
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
-    @patch("netmiko_collector.cli.get_formatter")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.get_formatter")
     def test_custom_workers(
         self,
         mock_get_formatter,
@@ -292,13 +292,13 @@ class TestCLI:
         mock_load_devices.return_value = mock_devices
         mock_load_commands.return_value = mock_commands
         
-        stats = ExecutionStats(
-            total=2,
-            completed=2,
-            successful=2,
-            failed=0,
-            duration=2.8,
-        )
+        stats = ExecutionStats()
+        stats.total_devices = 2
+        stats.completed_devices = 2
+        stats.successful_devices = 2
+        stats.failed_devices = 0
+        stats.start_time = 0.0
+        stats.end_time = 2.8
         mock_execute.return_value = stats
         
         mock_formatter = Mock()
@@ -318,7 +318,7 @@ class TestCLI:
         
         assert result.exit_code == 0
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
     def test_load_devices_error(
         self,
         mock_load_devices,
@@ -339,8 +339,8 @@ class TestCLI:
         
         assert result.exit_code == 3  # Invalid input error
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
     def test_load_commands_error(
         self,
         mock_load_commands,
@@ -364,9 +364,9 @@ class TestCLI:
         
         assert result.exit_code == 3  # Invalid input error
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
     def test_execution_error(
         self,
         mock_execute,
@@ -393,10 +393,10 @@ class TestCLI:
         
         assert result.exit_code == 1  # Generic error
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
-    @patch("netmiko_collector.cli.get_formatter")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.get_formatter")
     def test_progress_callback(
         self,
         mock_get_formatter,
@@ -451,10 +451,10 @@ class TestCLI:
         assert "progress_callback" in call_kwargs
         assert callable(call_kwargs["progress_callback"])
 
-    @patch("netmiko_collector.cli.load_devices_from_csv")
-    @patch("netmiko_collector.cli.load_commands_from_file")
-    @patch("netmiko_collector.cli.execute_on_devices")
-    @patch("netmiko_collector.cli.get_formatter")
+    @patch("src.netmiko_collector.cli.load_devices_from_csv")
+    @patch("src.netmiko_collector.cli.load_commands_from_file")
+    @patch("src.netmiko_collector.cli.execute_on_devices")
+    @patch("src.netmiko_collector.cli.get_formatter")
     def test_no_results(
         self,
         mock_get_formatter,
