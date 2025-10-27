@@ -40,10 +40,13 @@ wheels/
 venv/
 ENV/
 env/
+activate_venv.bat
+activate_venv.ps1
 
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
