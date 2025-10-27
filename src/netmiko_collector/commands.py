@@ -7,7 +7,7 @@ comments and blank lines.
 from pathlib import Path
 from typing import List
 
-from src.netmiko_collector.models import Command
+from .models import Command
 
 
 def load_commands_from_file(commands_file: Path) -> List[Command]:
