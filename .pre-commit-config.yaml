@@ -71,9 +71,5 @@ repos:
         args: ['--ignore=D100,D104,D203,D213,D406,D407']
         exclude: ^test_.*\.py$
 
-  # Security vulnerability scanning
-  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.3.3
-    hooks:
-      - id: python-safety-dependencies-check
-        files: requirements.*\.txt$
+  # Note: pip-audit is run in CI/CD pipeline instead of pre-commit
+  # due to performance considerations and API rate limits
